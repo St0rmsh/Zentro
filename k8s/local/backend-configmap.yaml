@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zentro-backend-config
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  FRONTEND_ORIGIN: "http://localhost:8080"
+  TRUST_PROXY: "1"
+  UV_THREADPOOL_SIZE: "128"
+  # High for local load-testing; keep this LOW/unset in real production.
+  RATE_LIMIT_MAX: "1000000"

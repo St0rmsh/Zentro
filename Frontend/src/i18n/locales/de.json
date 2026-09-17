@@ -1,0 +1,96 @@
+{
+  "settings": {
+    "preferences": {
+      "title": "App-Einstellungen",
+      "description": "Passen Sie Ihr Gesamterlebnis an.",
+      "language": {
+        "title": "Sprache",
+        "description": "Wählen Sie die in der gesamten Anwendung verwendete Sprache."
+      },
+      "accessibility": {
+        "title": "Barrierefreiheit & UX",
+        "description": "Konfigurieren Sie visuelle und interaktive Einstellungen.",
+        "reducedMotion": {
+          "title": "Reduzierte Bewegung",
+          "description": "Deaktivieren Sie nicht wesentliche Animationen und Übergänge in der gesamten App."
+        },
+        "compactMode": {
+          "title": "Kompaktmodus",
+          "description": "Reduzieren Sie den Abstand in Listen und Tabellen, um mehr Inhalte anzuzeigen."
+        },
+        "autoPlayMedia": {
+          "title": "Automatische Wiedergabe",
+          "description": "Videos und animierte GIFs beim Scrollen automatisch abspielen."
+        }
+      },
+      "notifications": {
+        "title": "Benachrichtigungen",
+        "description": "Wählen Sie, welche Aktivitätsupdates Sie erhalten möchten.",
+        "items": {
+          "likes": {
+            "title": "Über Likes benachrichtigen",
+            "description": "Erhalte Benachrichtigungen, wenn jemand mit deinen Likes interagiert."
+          },
+          "comments": {
+            "title": "Über Kommentare benachrichtigen",
+            "description": "Erhalte Benachrichtigungen, wenn jemand mit deinen Kommentaren interagiert."
+          },
+          "follows": {
+            "title": "Über neue Follower benachrichtigen",
+            "description": "Erhalte Benachrichtigungen, wenn dir jemand folgt."
+          },
+          "mentions": {
+            "title": "Über Erwähnungen benachrichtigen",
+            "description": "Erhalte Benachrichtigungen, wenn dich jemand erwähnt."
+          },
+          "bookmarks": {
+            "title": "Über Lesezeichen benachrichtigen",
+            "description": "Erhalte Benachrichtigungen, wenn jemand mit deinen Lesezeichen interagiert."
+          }
+        }
+      }
+    },
+    "privacy": {
+      "title": "Datenschutzeinstellungen",
+      "description": "Kontrollieren Sie, wer Ihre Inhalte und Aktivitäten sehen kann.",
+      "accountVisibility": {
+        "title": "Kontosichtbarkeit",
+        "description": "Verwalten Sie, wer mit Ihnen interagieren kann.",
+        "privateAccount": {
+          "title": "Privates Konto",
+          "description": "Wenn Ihr Konto privat ist, können nur von Ihnen genehmigte Personen Ihre Beiträge und Follower sehen."
+        },
+        "activityStatus": {
+          "title": "Aktivitätsstatus",
+          "description": "Erlauben Sie Konten, denen Sie folgen, und jedem, der Ihnen schreibt, zu sehen, wann Sie zuletzt aktiv waren."
+        },
+        "searchVisibility": {
+          "title": "Sichtbarkeit in der Suche",
+          "description": "Erlauben Sie, dass Ihr Profil in Suchergebnissen und Empfehlungen gefunden wird."
+        }
+      },
+      "blockedUsers": {
+        "title": "Blockierte Benutzer",
+        "description": "Blockierte Konten verwalten",
+        "placeholder": "Benutzername",
+        "add": "Hinzufügen",
+        "remove": "Entfernen"
+      },
+      "mutedUsers": {
+        "title": "Stummgeschaltete Benutzer",
+        "description": "Stummgeschaltete Konten verwalten",
+        "placeholder": "Benutzername",
+        "add": "Hinzufügen",
+        "remove": "Entfernen"
+      }
+    },
+    "security": {
+      "title": "Sicherheitseinstellungen",
+      "description": "Verwalten Sie Ihr Passwort und Ihre Sicherheitseinstellungen.",
+      "changePassword": {
+      "title": "Passwort ändern",
+      "description": "Stellen Sie sicher, dass Ihr Konto ein langes, zufälliges Passwort verwendet, um sicher zu bleiben."
+  }
+}
+  }
+}

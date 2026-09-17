@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zentro-backend
+  labels:
+    app: zentro-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: zentro-backend
+  template:
+    metadata:
+      labels:
+        app: zentro-backend
+    spec:
+      containers:
+        - name: zentro-backend
+          image: zentro-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: zentro-backend-config
+            - secretRef:
+                name: zentro-backend-secret
+          # Liveness: is the process alive at all. If this fails repeatedly,
+          # Kubernetes restarts the pod.
+          # Gives tsx time to finish JIT-compiling the whole backend on cold
+          # start (esbuild transpiling all TS + heavy deps like LangChain)
+          # before liveness/readiness get a say. Up to 30*5=150s before this
+          # is considered failed — liveness/readiness are ignored until this
+          # succeeds once.
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: 3000
+            periodSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          # Readiness: can this pod actually serve traffic right now (Mongo +
+          # Redis both connected). If this fails, the pod is pulled out of
+          # the Service's load-balancing rotation without being restarted.
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "400m"
+              memory: "400Mi"
+            limits:
+              cpu: "1000m"
+              memory: "768Mi"
+          # Gives the graceful-shutdown handler in index.ts time to finish
+          # in-flight requests and close DB/Redis connections cleanly before
+          # Kubernetes force-kills the container.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]
+      terminationGracePeriodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zentro-backend-service
+spec:
+  selector:
+    app: zentro-backend
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+  type: ClusterIP

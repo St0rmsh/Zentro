@@ -1,0 +1,96 @@
+{
+  "settings": {
+    "preferences": {
+      "title": "Preferencias de la aplicación",
+      "description": "Personaliza tu experiencia general.",
+      "language": {
+        "title": "Idioma",
+        "description": "Selecciona el idioma que se usará en toda la aplicación."
+      },
+      "accessibility": {
+        "title": "Accesibilidad y UX",
+        "description": "Configura las preferencias visuales y de interacción.",
+        "reducedMotion": {
+          "title": "Movimiento reducido",
+          "description": "Desactiva las animaciones y transiciones no esenciales en toda la aplicación."
+        },
+        "compactMode": {
+          "title": "Modo compacto",
+          "description": "Reduce el espaciado en listas y tablas para mostrar más contenido."
+        },
+        "autoPlayMedia": {
+          "title": "Reproducción automática",
+          "description": "Reproduce automáticamente videos y GIFs animados mientras te desplazas."
+        }
+      },
+      "notifications": {
+        "title": "Notificaciones",
+        "description": "Elige qué actualizaciones de actividad deseas recibir.",
+        "items": {
+          "likes": {
+            "title": "Notificarme sobre me gusta",
+            "description": "Recibe notificaciones cuando alguien interactúe con tus me gusta."
+          },
+          "comments": {
+            "title": "Notificarme sobre comentarios",
+            "description": "Recibe notificaciones cuando alguien interactúe con tus comentarios."
+          },
+          "follows": {
+            "title": "Notificarme sobre seguidores",
+            "description": "Recibe notificaciones cuando alguien te siga."
+          },
+          "mentions": {
+            "title": "Notificarme sobre menciones",
+            "description": "Recibe notificaciones cuando alguien te mencione."
+          },
+          "bookmarks": {
+            "title": "Notificarme sobre guardados",
+            "description": "Recibe notificaciones cuando alguien interactúe con tus guardados."
+          }
+        }
+      }
+    },
+    "privacy": {
+      "title": "Configuración de privacidad",
+      "description": "Controla quién puede ver tu contenido y actividad.",
+      "accountVisibility": {
+        "title": "Visibilidad de la cuenta",
+        "description": "Administra quién puede interactuar contigo.",
+        "privateAccount": {
+          "title": "Cuenta privada",
+          "description": "Cuando tu cuenta es privada, solo las personas que apruebes pueden ver tus publicaciones y seguidores."
+        },
+        "activityStatus": {
+          "title": "Estado de actividad",
+          "description": "Permite que las cuentas que sigues y cualquier persona que te escriba vea cuándo estuviste activo por última vez."
+        },
+        "searchVisibility": {
+          "title": "Visibilidad en búsquedas",
+          "description": "Permite que tu perfil sea descubierto en resultados de búsqueda y recomendaciones."
+        }
+      },
+      "blockedUsers": {
+        "title": "Usuarios bloqueados",
+        "description": "Administra las cuentas bloqueadas",
+        "placeholder": "Nombre de usuario",
+        "add": "Agregar",
+        "remove": "Quitar"
+      },
+      "mutedUsers": {
+        "title": "Usuarios silenciados",
+        "description": "Administra las cuentas silenciadas",
+        "placeholder": "Nombre de usuario",
+        "add": "Agregar",
+        "remove": "Quitar"
+      }
+    },
+    "security": {
+  "title": "Configuración de seguridad",
+  "description": "Gestiona tu contraseña y preferencias de seguridad.",
+  "changePassword": {
+    "title": "Cambiar contraseña",
+    "description": "Asegúrate de que tu cuenta use una contraseña larga y aleatoria para mantenerse segura."
+  }
+}
+  }
+}

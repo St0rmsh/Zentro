@@ -1,0 +1,18 @@
+# LOCAL TESTING ONLY. Exposes the backend directly on localhost, load-balanced
+# across all replicas — unlike kubectl port-forward, which pins to a single
+# pod for its entire session and defeats the purpose of testing a
+# horizontally-scaled deployment. Uses the SAME pod selector as
+# zentro-backend-service (ClusterIP), so it doesn't interfere with the
+# frontend's internal service discovery — this is purely an extra entry point
+# for direct external testing.
+apiVersion: v1
+kind: Service
+metadata:
+  name: zentro-backend-lb
+spec:
+  selector:
+    app: zentro-backend
+  ports:
+    - port: 3000
+      targetPort: 3000
+  type: LoadBalancer

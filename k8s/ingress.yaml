@@ -1,0 +1,44 @@
+# Requires the AWS Load Balancer Controller installed on your EKS cluster.
+# Replace: <YOUR_ACM_CERT_ARN> and the host domain with your real values.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: zentro-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/certificate-arn: <YOUR_ACM_CERT_ARN>
+    # Socket.IO's handshake needs requests from the same client to keep
+    # landing on the same backend pod during the initial connection upgrade.
+    # This cookie-based stickiness on the backend target group handles that
+    # without requiring a WebSocket-only transport change on the client.
+    alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=3600
+spec:
+  rules:
+    - host: zentro.example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: zentro-backend-service
+                port:
+                  number: 3000
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: zentro-backend-service
+                port:
+                  number: 3000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: zentro-frontend-service
+                port:
+                  number: 80

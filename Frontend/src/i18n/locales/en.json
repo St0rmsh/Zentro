@@ -1,0 +1,96 @@
+{
+  "settings": {
+    "preferences": {
+      "title": "App Preferences",
+      "description": "Customize your overall experience.",
+      "language": {
+        "title": "Language",
+        "description": "Select the language used throughout the application."
+      },
+      "accessibility": {
+        "title": "Accessibility & UX",
+        "description": "Configure visual and interaction preferences.",
+        "reducedMotion": {
+          "title": "Reduced Motion",
+          "description": "Disable non-essential animations and transitions throughout the app."
+        },
+        "compactMode": {
+          "title": "Compact Mode",
+          "description": "Reduce spacing in lists and tables to show more content."
+        },
+        "autoPlayMedia": {
+          "title": "Auto-play Media",
+          "description": "Automatically play videos and animated GIFs as you scroll."
+        }
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Choose which activity updates you receive.",
+        "items": {
+          "likes": {
+            "title": "Notify me about likes",
+            "description": "Receive notifications when someone interacts with your likes."
+          },
+          "comments": {
+            "title": "Notify me about comments",
+            "description": "Receive notifications when someone interacts with your comments."
+          },
+          "follows": {
+            "title": "Notify me about follows",
+            "description": "Receive notifications when someone follows you."
+          },
+          "mentions": {
+            "title": "Notify me about mentions",
+            "description": "Receive notifications when someone mentions you."
+          },
+          "bookmarks": {
+            "title": "Notify me about bookmarks",
+            "description": "Receive notifications when someone interacts with your bookmarks."
+          }
+        }
+      }
+    },
+    "privacy": {
+      "title": "Privacy Settings",
+      "description": "Control who can see your content and activity.",
+      "accountVisibility": {
+        "title": "Account Visibility",
+        "description": "Manage who can interact with you.",
+        "privateAccount": {
+          "title": "Private Account",
+          "description": "When your account is private, only people you approve can see your posts and followers."
+        },
+        "activityStatus": {
+          "title": "Activity Status",
+          "description": "Allow accounts you follow and anyone you message to see when you were last active."
+        },
+        "searchVisibility": {
+          "title": "Search Visibility",
+          "description": "Allow your profile to be discovered in search results and recommendations."
+        }
+      },
+      "blockedUsers": {
+        "title": "Blocked Users",
+        "description": "Manage blocked accounts",
+        "placeholder": "Username",
+        "add": "Add",
+        "remove": "Remove"
+      },
+      "mutedUsers": {
+        "title": "Muted Users",
+        "description": "Manage muted accounts",
+        "placeholder": "Username",
+        "add": "Add",
+        "remove": "Remove"
+      }
+    },
+  "security": {
+  "title": "Security Settings",
+  "description": "Manage your password and security preferences.",
+  "changePassword": {
+    "title": "Change Password",
+    "description": "Ensure your account is using a long, random password to stay secure."
+  }
+}
+  }
+}

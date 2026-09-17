@@ -1,0 +1,96 @@
+{
+  "settings": {
+    "preferences": {
+      "title": "Préférences de l'application",
+      "description": "Personnalisez votre expérience globale.",
+      "language": {
+        "title": "Langue",
+        "description": "Sélectionnez la langue utilisée dans toute l'application."
+      },
+      "accessibility": {
+        "title": "Accessibilité et UX",
+        "description": "Configurez les préférences visuelles et d'interaction.",
+        "reducedMotion": {
+          "title": "Mouvement réduit",
+          "description": "Désactivez les animations et transitions non essentielles dans toute l'application."
+        },
+        "compactMode": {
+          "title": "Mode compact",
+          "description": "Réduisez l'espacement dans les listes et les tableaux pour afficher plus de contenu."
+        },
+        "autoPlayMedia": {
+          "title": "Lecture automatique",
+          "description": "Lisez automatiquement les vidéos et GIFs animés lors du défilement."
+        }
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Choisissez les mises à jour d'activité que vous recevez.",
+        "items": {
+          "likes": {
+            "title": "Me notifier des mentions J'aime",
+            "description": "Recevez des notifications lorsque quelqu'un interagit avec vos mentions J'aime."
+          },
+          "comments": {
+            "title": "Me notifier des commentaires",
+            "description": "Recevez des notifications lorsque quelqu'un interagit avec vos commentaires."
+          },
+          "follows": {
+            "title": "Me notifier des abonnés",
+            "description": "Recevez des notifications lorsque quelqu'un vous suit."
+          },
+          "mentions": {
+            "title": "Me notifier des mentions",
+            "description": "Recevez des notifications lorsque quelqu'un vous mentionne."
+          },
+          "bookmarks": {
+            "title": "Me notifier des favoris",
+            "description": "Recevez des notifications lorsque quelqu'un interagit avec vos favoris."
+          }
+        }
+      }
+    },
+    "privacy": {
+      "title": "Paramètres de confidentialité",
+      "description": "Contrôlez qui peut voir votre contenu et votre activité.",
+      "accountVisibility": {
+        "title": "Visibilité du compte",
+        "description": "Gérez qui peut interagir avec vous.",
+        "privateAccount": {
+          "title": "Compte privé",
+          "description": "Lorsque votre compte est privé, seules les personnes que vous approuvez peuvent voir vos publications et abonnés."
+        },
+        "activityStatus": {
+          "title": "Statut d'activité",
+          "description": "Permettez aux comptes que vous suivez et à toute personne qui vous contacte de voir votre dernière activité."
+        },
+        "searchVisibility": {
+          "title": "Visibilité dans la recherche",
+          "description": "Permettez à votre profil d'être découvert dans les résultats de recherche et les recommandations."
+        }
+      },
+      "blockedUsers": {
+        "title": "Utilisateurs bloqués",
+        "description": "Gérer les comptes bloqués",
+        "placeholder": "Nom d'utilisateur",
+        "add": "Ajouter",
+        "remove": "Retirer"
+      },
+      "mutedUsers": {
+        "title": "Utilisateurs mis en sourdine",
+        "description": "Gérer les comptes mis en sourdine",
+        "placeholder": "Nom d'utilisateur",
+        "add": "Ajouter",
+        "remove": "Retirer"
+      }
+    },
+    "security": {
+  "title": "Paramètres de sécurité",
+  "description": "Gérez votre mot de passe et vos préférences de sécurité.",
+  "changePassword": {
+    "title": "Changer le mot de passe",
+    "description": "Assurez-vous que votre compte utilise un mot de passe long et aléatoire pour rester sécurisé."
+  }
+}
+  }
+}

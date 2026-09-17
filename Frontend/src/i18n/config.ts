@@ -1,0 +1,35 @@
+import i18n from "i18next";
+import { initReactI18next } from "react-i18next";
+import LanguageDetector from "i18next-browser-languagedetector";
+
+import en from "./locales/en.json";
+import es from "./locales/es.json";
+import fr from "./locales/fr.json";
+import de from "./locales/de.json";
+
+i18n
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    resources: {
+      en: { translation: en },
+      es: { translation: es },
+      fr: { translation: fr },
+      de: { translation: de },
+    },
+    fallbackLng: "en",
+    supportedLngs: ["en", "es", "fr", "de"],
+    interpolation: {
+      escapeValue: false,
+    },
+    detection: {
+      // localStorage is checked first — this is where we persist the user's saved
+      // choice (see PreferencesSettingsPage), so it wins on repeat visits in the same
+      // browser. Falls back to the browser's own language on a first visit.
+      order: ["localStorage", "navigator"],
+      caches: ["localStorage"],
+      lookupLocalStorage: "i18nextLng",
+    },
+  });
+
+export default i18n;
