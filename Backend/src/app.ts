@@ -34,7 +34,7 @@ const app = express()
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-app.set("trust proxy", config.TRUST_PROXY);
+app.set("trust proxy", 1);
 
 app.use(cors({
     // config.FRONTEND_ORIGINS is already parsed/trimmed/deduped from
