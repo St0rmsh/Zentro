@@ -74,11 +74,11 @@ app.use("/api", rateLimit({
     message: { success: false, message: "Too many requests. Please try again later." },
 }));
 
-app.get("/", (req, res) => {
-    return res.status(200).json({
-        message: 'Health Check route'
-    })
-})
+// app.get("/", (req, res) => {
+//     return res.status(200).json({
+//         message: 'Health Check route'
+//     })
+// })
 
 app.get("/health/live", (_req, res) => {
     res.status(200).json({ success: true, status: "ok", uptime: process.uptime() });
