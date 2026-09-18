@@ -18,34 +18,76 @@ import type { IUserProfileResponse } from "../types/Profile/userProfile.types.js
 
 // Register user service
 
-export const registerUserService = async (data:RegisterBody) =>{
-
+export const registerUserService = async (data: RegisterBody) => {
     try {
-        
-        const {fullname,email,password,username} = data
+        const { fullname, email, password, username } = data;
 
-        const existingUser = await UserModel.findOne({ $or: [{ email }, { username }]});
-
-        if(existingUser){
-            throw new Error("User already exists")
+        if (!fullname || !email || !password || !username) {
+            throw new Error("All fields are required");
         }
 
+        const normalizedEmail = email.toLowerCase().trim();
+        const normalizedUsername = username.toLowerCase().trim();
+
+        // Check email separately
+        const existingEmail = await UserModel.findOne({
+            email: normalizedEmail,
+        });
+
+        if (existingEmail) {
+            throw new Error("Email already registered");
+        }
+
+        // Check username separately
+        const existingUsername = await UserModel.findOne({
+            username: normalizedUsername,
+        });
+
+        if (existingUsername) {
+            throw new Error("Username already taken");
+        }
+
+        // Create user
         const newUser = await UserModel.create({
-            fullname,
-            email,
+            fullname: fullname.trim(),
+            email: normalizedEmail,
             password,
-            username,
-        })
+            username: normalizedUsername,
+        });
 
+        // Send OTP, but don't fail registration if email sending fails
         try {
-            await sendOtpService(email);
+            await sendOtpService(normalizedEmail);
         } catch (otpError) {
-        console.error("Registration succeeded but OTP email failed to send:", otpError);
+            console.error(
+                "Registration succeeded but OTP email failed to send:",
+                otpError
+            );
         }
 
-        const accessToken = jwt.sign({_id: newUser._id , email:newUser.email,roles:newUser.roles},config.ACCESS_TOKEN,{ expiresIn: "15m" })
+        const accessToken = jwt.sign(
+            {
+                _id: newUser._id,
+                email: newUser.email,
+                roles: newUser.roles,
+            },
+            config.ACCESS_TOKEN,
+            {
+                expiresIn: "15m",
+            }
+        );
 
-        const refreshToken = jwt.sign({_id: newUser._id , email:newUser.email,roles:newUser.roles},config.REFRESH_TOKEN,{ expiresIn: "7d" })
+        const refreshToken = jwt.sign(
+            {
+                _id: newUser._id,
+                email: newUser.email,
+                roles: newUser.roles,
+            },
+            config.REFRESH_TOKEN,
+            {
+                expiresIn: "7d",
+            }
+        );
 
         return {
             user: {
@@ -53,20 +95,21 @@ export const registerUserService = async (data:RegisterBody) =>{
                 username: newUser.username,
                 email: newUser.email,
                 fullname: newUser.fullname,
-                isVerified: newUser.isVerified
-        },
+                isVerified: newUser.isVerified,
+            },
             accessToken,
-            refreshToken
-
-        }
+            refreshToken,
+        };
     } catch (error) {
         console.error("Error in user service:", error);
+
         throw new Error(
-            error instanceof Error ? error.message : "Unknown error"
+            error instanceof Error
+                ? error.message
+                : "Registration failed"
         );
     }
-}
-
+};
 
 // Login user service
 
@@ -81,7 +124,11 @@ export const loginUserService = async (data:LoginBody) =>{
             );
         }
 
-        const user = await UserModel.findOne({email});
+        const user = await UserModel.findOne(
+    email
+        ? { email: email.toLowerCase().trim() }
+        : { username: username!.toLowerCase().trim() }
+);
 
         if(!user){
             throw new Error("User not found")
