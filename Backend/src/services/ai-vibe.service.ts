@@ -8,7 +8,7 @@ export const getVibeScore = async (comments: string[]): Promise<string> => {
         if (comments.length === 0) return "No comments yet";
 
         const model = new ChatGoogleGenerativeAI({
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             maxOutputTokens: 64,
             apiKey: process.env.GEMINI_API_KEY
         });

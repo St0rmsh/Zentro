@@ -7,84 +7,219 @@ import { ChangePasswordFormData } from "../schemas/changePassword.schema";
 import { LoginResponse, RegisterResponse } from "../types/auth.types";
 import { ApiResponse } from "@/shared/types/api.types";
 import { User } from "@/shared/types/user.types";
+
+export interface NotificationPreferences {
+  likes: boolean;
+  comments: boolean;
+  follows: boolean;
+  mentions: boolean;
+  bookmarks: boolean;
+}
+
 export interface UserSettingsResponse {
-  privacy: { privateAccount: boolean; activityStatus: boolean; searchVisibility: boolean };
-  settings: { theme: "light" | "dark" | "system"; language: "en" | "es" | "fr" | "de"; reducedMotion: boolean; compactMode: boolean; autoPlayMedia: boolean };
-  notificationPreferences: { likes: boolean; comments: boolean; follows: boolean; mentions: boolean; bookmarks: boolean };
+  privacy: {
+    privateAccount: boolean;
+    activityStatus: boolean;
+    searchVisibility: boolean;
+  };
+
+  settings: {
+    theme: "light" | "dark" | "system";
+    language: "en" | "es" | "fr" | "de";
+    reducedMotion: boolean;
+    compactMode: boolean;
+    autoPlayMedia: boolean;
+  };
+
+  notificationPreferences: NotificationPreferences;
+}
+
+export interface UpdateSettingsPayload {
+  language?: "en" | "es" | "fr" | "de";
+
+  theme?: "light" | "dark" | "system";
+
+  reducedMotion?: boolean;
+
+  compactMode?: boolean;
+
+  autoPlayMedia?: boolean;
+
+  privateAccount?: boolean;
+
+  activityStatus?: boolean;
+
+  searchVisibility?: boolean;
+
+  preferences?: {
+    notifications?: NotificationPreferences;
+  };
 }
 
 export const authService = {
   login: async (data: LoginFormData) => {
-    const response = await axiosInstance.post<ApiResponse<LoginResponse>>("/auth/login", data);    
+    const response =
+      await axiosInstance.post<ApiResponse<LoginResponse>>(
+        "/auth/login",
+        data
+      );
+
     return response.data;
   },
 
   register: async (data: RegisterFormData) => {
-    const response = await axiosInstance.post<ApiResponse<RegisterResponse>>("/auth/register", data);
+    const response =
+      await axiosInstance.post<ApiResponse<RegisterResponse>>(
+        "/auth/register",
+        data
+      );
+
     return response.data;
   },
 
   getCurrentUser: async () => {
-    const response = await axiosInstance.get<ApiResponse<User>>("/auth/me");
+    const response =
+      await axiosInstance.get<ApiResponse<User>>(
+        "/auth/me"
+      );
+
     console.log("Current User:", response.data);
+
     return response.data;
   },
 
   logout: async () => {
-    const response = await axiosInstance.post<ApiResponse>("/auth/logout");
+    const response =
+      await axiosInstance.post<ApiResponse>(
+        "/auth/logout"
+      );
+
     return response.data;
   },
 
   sendOtp: async (email?: string) => {
-    const response = await axiosInstance.post<ApiResponse>("/auth/send-otp", email ? { email } : undefined);
+    const response =
+      await axiosInstance.post<ApiResponse>(
+        "/auth/send-otp",
+        email ? { email } : undefined
+      );
+
     return response.data;
   },
 
-  verifyOtp: async (otp: string, email?: string) => {
-    const response = await axiosInstance.post<ApiResponse>("/auth/verify-otp", { otp, ...(email ? { email } : {}) });
+  verifyOtp: async (
+    otp: string,
+    email?: string
+  ) => {
+    const response =
+      await axiosInstance.post<ApiResponse>(
+        "/auth/verify-otp",
+        {
+          otp,
+          ...(email ? { email } : {}),
+        }
+      );
+
     return response.data;
   },
 
-  changePassword: async (data: ChangePasswordFormData) => {
-    const response = await axiosInstance.patch<ApiResponse>("/auth/change-password", data);
+  changePassword: async (
+    data: ChangePasswordFormData
+  ) => {
+    const response =
+      await axiosInstance.patch<ApiResponse>(
+        "/auth/change-password",
+        data
+      );
+
     return response.data;
   },
 
-  forgotPassword: async (data: ForgotPasswordFormData) => {
-    const response = await axiosInstance.post<ApiResponse>("/auth/forgot-password", data);
+  forgotPassword: async (
+    data: ForgotPasswordFormData
+  ) => {
+    const response =
+      await axiosInstance.post<ApiResponse>(
+        "/auth/forgot-password",
+        data
+      );
+
     return response.data;
   },
 
-  resetPassword: async (data: ResetPasswordFormData) => {
-    const response = await axiosInstance.post<ApiResponse>("/auth/reset-password", data);
+  resetPassword: async (
+    data: ResetPasswordFormData
+  ) => {
+    const response =
+      await axiosInstance.post<ApiResponse>(
+        "/auth/reset-password",
+        data
+      );
+
     return response.data;
   },
 
   getSettings: async () => {
-    const response = await axiosInstance.get<ApiResponse<UserSettingsResponse>>("/auth/settings");
+    const response =
+      await axiosInstance.get<
+        ApiResponse<UserSettingsResponse>
+      >("/auth/settings");
+
     return response.data.data;
   },
 
-  updateSettings: async (data: Record<string, string | boolean>) => {
-    const response = await axiosInstance.patch<ApiResponse<unknown>>("/auth/settings", data);
+  updateSettings: async (
+    data: UpdateSettingsPayload
+  ) => {
+    const response =
+      await axiosInstance.patch<ApiResponse<unknown>>(
+        "/auth/settings",
+        data
+      );
+
     return response.data;
   },
 
   deactivateAccount: async () => {
-    await axiosInstance.patch("/auth/deactivate");
+    await axiosInstance.patch(
+      "/auth/deactivate"
+    );
   },
 
   deleteAccount: async () => {
-    await axiosInstance.delete("/auth/account");
+    await axiosInstance.delete(
+      "/auth/account"
+    );
   },
 
   getPrivacyLists: async () => {
-    const response = await axiosInstance.get<ApiResponse<{ blockedUsers: User[]; mutedUsers: User[] }>>("/auth/privacy-lists");
+    const response =
+      await axiosInstance.get<
+        ApiResponse<{
+          blockedUsers: User[];
+          mutedUsers: User[];
+        }>
+      >("/auth/privacy-lists");
+
     return response.data.data;
   },
 
-  updatePrivacyList: async (list: "blockedUsers" | "mutedUsers", username: string, add: boolean) => {
-    const response = await axiosInstance.patch<ApiResponse<User[]>>(`/auth/privacy-lists/${list}`, { username, add });
+  updatePrivacyList: async (
+    list: "blockedUsers" | "mutedUsers",
+    username: string,
+    add: boolean
+  ) => {
+    const response =
+      await axiosInstance.patch<
+        ApiResponse<User[]>
+      >(
+        `/auth/privacy-lists/${list}`,
+        {
+          username,
+          add,
+        }
+      );
+
     return response.data.data;
   },
 };

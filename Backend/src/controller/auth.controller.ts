@@ -5,6 +5,32 @@ import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import { changePasswordService, deleteAccountService, forgotPasswordService, generateAccessTokenService, getMyProfileService, getPrivacyListsService, getUserSettingsService, loginUserService, logoutService, registerUserService, resetPasswordService, sendOtpService, updateAccountStatusService, updatePrivacyListService, updateUserDetailsService, updateUserSettingsService, verifyOtpService } from "../services/user.service.js";
 
+/**
+ * Single source of truth for cookie flags.
+ *
+ * On Render, the frontend (static site) and backend (web service) live on
+ * different onrender.com subdomains, which browsers treat as cross-site.
+ * Cross-site cookies are only ever sent if SameSite=None AND Secure=true —
+ * "strict" (the previous hardcoded value) silently drops them, which is
+ * why login would appear to succeed but every subsequent request 401s.
+ *
+ * config.COOKIE_SAMESITE / COOKIE_SECURE already resolve this correctly per
+ * environment (see config.ts), so every cookie in this file reads from here
+ * instead of hardcoding "strict" / NODE_ENV checks individually.
+ */
+const accessCookieOptions = {
+    httpOnly: true,
+    secure: config.COOKIE_SECURE,
+    sameSite: config.COOKIE_SAMESITE,
+    maxAge: 15 * 60 * 1000,
+};
+
+const refreshCookieOptions = {
+    httpOnly: true,
+    secure: config.COOKIE_SECURE,
+    sameSite: config.COOKIE_SAMESITE,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+};
 
 // for registration controller
 export const registrationController = async (req: Request<{}, {}, RegisterBody>,
@@ -46,18 +72,8 @@ export const loginController = async (req: Request<{}, {}, RegisterBody>,
 
         console.log("user", user)
 
-        res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            secure: config.NODE_ENV === "production",
-            sameSite: "strict",
-            maxAge: 15 * 60 * 1000
-        });
-        res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: config.NODE_ENV === "production",
-            sameSite: "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        });
+        res.cookie("accessToken", accessToken, accessCookieOptions);
+        res.cookie("refreshToken", refreshToken, refreshCookieOptions);
 
         console.log("user =>", user)
 
@@ -90,9 +106,8 @@ export const oauthCallbackController = (req: Request, res: Response) => {
 
     const accessToken = jwt.sign({ _id: user._id, email: user.email, roles: user.roles }, config.ACCESS_TOKEN, { expiresIn: "15m" });
     const refreshToken = jwt.sign({ _id: user._id, email: user.email, roles: user.roles }, config.REFRESH_TOKEN, { expiresIn: "7d" });
-    const cookieOptions = { httpOnly: true, secure: config.NODE_ENV === "production", sameSite: "strict" as const };
-    res.cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
-    res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res.cookie("accessToken", accessToken, accessCookieOptions);
+    res.cookie("refreshToken", refreshToken, refreshCookieOptions);
     return res.redirect(config.FRONTEND_ORIGIN);
 };
 
@@ -140,12 +155,7 @@ export const refreshAccessTokenController = async (req: Request, res: Response) 
 
         const accessToken = await generateAccessTokenService(refreshToken);
 
-        res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            secure: config.NODE_ENV === "production",
-            sameSite: "strict",
-            maxAge: 15 * 60 * 1000
-        });
+        res.cookie("accessToken", accessToken, accessCookieOptions);
 
         res.status(200).json({
             success: true,
@@ -176,8 +186,13 @@ export const logoutController = async (req: Request, res: Response) => {
             await logoutService(refreshToken, accessToken);
         }
 
-        res.clearCookie("accessToken");
-        res.clearCookie("refreshToken");
+        // clearCookie must be called with the SAME httpOnly/secure/sameSite
+        // options the cookie was set with, or the browser treats it as a
+        // different cookie and won't remove it — the previous bare calls
+        // silently failed to clear anything once secure/sameSite stopped
+        // matching their defaults.
+        res.clearCookie("accessToken", accessCookieOptions);
+        res.clearCookie("refreshToken", refreshCookieOptions);
 
 
         res.status(200).json({
@@ -289,8 +304,8 @@ export const verifyOtpController = async (
 
         const accessToken = jwt.sign({ _id: user._id, email: user.email, roles: user.roles }, config.ACCESS_TOKEN, { expiresIn: "15m" });
         const refreshToken = jwt.sign({ _id: user._id, email: user.email, roles: user.roles }, config.REFRESH_TOKEN, { expiresIn: "7d" });
-        res.cookie("accessToken", accessToken, { httpOnly: true, secure: config.NODE_ENV === "production", sameSite: "strict", maxAge: 15 * 60 * 1000 });
-        res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: config.NODE_ENV === "production", sameSite: "strict", maxAge: 7 * 24 * 60 * 60 * 1000 });
+        res.cookie("accessToken", accessToken, accessCookieOptions);
+        res.cookie("refreshToken", refreshToken, refreshCookieOptions);
 
         const safeUser: any = user.toObject();
         delete safeUser.password;

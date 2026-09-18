@@ -4,11 +4,18 @@
  */
 
 // API Configuration
-export const API_BASE_URL = "http://localhost:3000/api";
-export const API_VERSION = "v1";
+//
+// Vite only bakes VITE_-prefixed vars into the build, and only at build
+// time. The previous hardcoded "http://localhost:3000/api" meant every
+// deployed build silently pointed at localhost no matter what env vars
+// were set on Render — this is why the Static Site would build fine but
+// every API call would fail (or hit the visitor's own machine) in the
+// browser.
+export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+export const API_VERSION = import.meta.env.VITE_API_VERSION || "v1";
 
 // Socket.IO Configuration
-export const SOCKET_URL = "http://localhost:3000";
+export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3000";
 
 // ImageKit Configuration
 export const IMAGEKIT_URL = import.meta.env.VITE_IMAGEKIT_URL || "https://ik.imagekit.io/";

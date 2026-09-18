@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { feedService } from "../services/feed.service";
-import { FeedState, FeedTab, Post } from "../types/feed.types";
+import { FeedState, FeedTab } from "../types/feed.types";
 
 
 

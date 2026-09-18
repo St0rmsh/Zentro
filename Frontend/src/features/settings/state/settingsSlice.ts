@@ -1,76 +1,224 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { SettingsState, Theme, Language, SettingsPreferences } from "../types";
+import {
+  createSlice,
+  PayloadAction,
+} from "@reduxjs/toolkit";
+
+import {
+  SettingsState,
+  Theme,
+  Language,
+  SettingsPreferences,
+} from "../types";
 
 const getInitialTheme = (): Theme => {
-  const savedTheme = localStorage.getItem("theme") as Theme;
+  const savedTheme =
+    localStorage.getItem("theme") as Theme;
+
   const theme = savedTheme || "system";
+
   applyTheme(theme);
+
   return theme;
 };
 
 const applyTheme = (theme: Theme) => {
-  const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-  document.documentElement.classList.toggle("dark", isDark);
-  document.documentElement.classList.toggle("light", !isDark);
+  const isDark =
+    theme === "dark" ||
+    (theme === "system" &&
+      window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches);
+
+  document.documentElement.classList.toggle(
+    "dark",
+    isDark
+  );
+
+  document.documentElement.classList.toggle(
+    "light",
+    !isDark
+  );
 };
 
-const getInitialPreferences = (): SettingsPreferences => {
-  const savedPrefs = localStorage.getItem("preferences");
-  if (savedPrefs) {
-    try {
-      const preferences = JSON.parse(savedPrefs) as SettingsPreferences;
-      applyPreferences(preferences);
-      return preferences;
-    } catch {
-      // Ignore
+const getInitialPreferences =
+  (): SettingsPreferences => {
+    const savedPrefs =
+      localStorage.getItem("preferences");
+
+    if (savedPrefs) {
+      try {
+        const preferences =
+          JSON.parse(
+            savedPrefs
+          ) as Partial<SettingsPreferences>;
+
+        const normalizedPreferences: SettingsPreferences =
+          {
+            reducedMotion:
+              preferences.reducedMotion ??
+              false,
+
+            compactMode:
+              preferences.compactMode ??
+              false,
+
+            autoPlayMedia:
+              preferences.autoPlayMedia ??
+              true,
+
+            notifications: {
+              likes:
+                preferences.notifications?.likes ??
+                true,
+
+              comments:
+                preferences.notifications?.comments ??
+                true,
+
+              follows:
+                preferences.notifications?.follows ??
+                true,
+
+              mentions:
+                preferences.notifications?.mentions ??
+                true,
+
+              bookmarks:
+                preferences.notifications?.bookmarks ??
+                true,
+            },
+          };
+
+        applyPreferences(
+          normalizedPreferences
+        );
+
+        return normalizedPreferences;
+      } catch {
+        // Ignore invalid localStorage data.
+      }
     }
-  }
-  return {
-    reducedMotion: false,
-    compactMode: false,
-    autoPlayMedia: true,
-  };
-};
 
-const applyPreferences = (preferences: SettingsPreferences) => {
-  document.documentElement.classList.toggle("compact-mode", preferences.compactMode);
-  document.documentElement.classList.toggle("reduced-motion", preferences.reducedMotion);
+    return {
+      reducedMotion: false,
+      compactMode: false,
+      autoPlayMedia: true,
+
+      notifications: {
+        likes: true,
+        comments: true,
+        follows: true,
+        mentions: true,
+        bookmarks: true,
+      },
+    };
+  };
+
+const applyPreferences = (
+  preferences: SettingsPreferences
+) => {
+  document.documentElement.classList.toggle(
+    "compact-mode",
+    preferences.compactMode
+  );
+
+  document.documentElement.classList.toggle(
+    "reduced-motion",
+    preferences.reducedMotion
+  );
 };
 
 const initialState: SettingsState = {
   theme: getInitialTheme(),
-  language: (localStorage.getItem("language") as Language) || "en",
+
+  language:
+    (localStorage.getItem(
+      "language"
+    ) as Language) || "en",
+
   preferences: getInitialPreferences(),
+
   loading: false,
+
   error: null,
+
   successMessage: null,
 };
 
 const settingsSlice = createSlice({
   name: "settings",
+
   initialState,
+
   reducers: {
-    setTheme: (state, action: PayloadAction<Theme>) => {
+    setTheme: (
+      state,
+      action: PayloadAction<Theme>
+    ) => {
       state.theme = action.payload;
-      localStorage.setItem("theme", action.payload);
-      
+
+      localStorage.setItem(
+        "theme",
+        action.payload
+      );
+
       applyTheme(action.payload);
     },
-    setLanguage: (state, action: PayloadAction<Language>) => {
+
+    setLanguage: (
+      state,
+      action: PayloadAction<Language>
+    ) => {
       state.language = action.payload;
-      localStorage.setItem("language", action.payload);
+
+      localStorage.setItem(
+        "language",
+        action.payload
+      );
     },
-    updatePreferences: (state, action: PayloadAction<Partial<SettingsPreferences>>) => {
-      state.preferences = { ...state.preferences, ...action.payload };
-      localStorage.setItem("preferences", JSON.stringify(state.preferences));
-      applyPreferences(state.preferences);
+
+    updatePreferences: (
+      state,
+      action: PayloadAction<
+        Partial<SettingsPreferences>
+      >
+    ) => {
+      state.preferences = {
+        ...state.preferences,
+        ...action.payload,
+
+        notifications: {
+          ...state.preferences.notifications,
+          ...action.payload.notifications,
+        },
+      };
+
+      localStorage.setItem(
+        "preferences",
+        JSON.stringify(
+          state.preferences
+        )
+      );
+
+      applyPreferences(
+        state.preferences
+      );
     },
-    clearSettingsMessages: (state) => {
+
+    clearSettingsMessages: (
+      state
+    ) => {
       state.error = null;
       state.successMessage = null;
-    }
+    },
   },
 });
 
-export const { setTheme, setLanguage, updatePreferences, clearSettingsMessages } = settingsSlice.actions;
+export const {
+  setTheme,
+  setLanguage,
+  updatePreferences,
+  clearSettingsMessages,
+} = settingsSlice.actions;
+
 export default settingsSlice.reducer;

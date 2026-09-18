@@ -29,7 +29,12 @@ const app = express()
 app.set("trust proxy", config.TRUST_PROXY);
 
 app.use(cors({
-    origin: process.env.FRONTEND_ORIGINS?.split(",").map((origin) => origin.trim()) || [config.FRONTEND_ORIGIN],
+    // config.FRONTEND_ORIGINS is already parsed/trimmed/deduped from
+    // FRONTEND_ORIGINS (or FRONTEND_ORIGIN) in config.ts — reading directly
+    // from process.env here meant FRONTEND_ORIGIN alone (the single-origin
+    // fallback var) was silently ignored whenever FRONTEND_ORIGINS wasn't
+    // also set.
+    origin: config.FRONTEND_ORIGINS,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization", "X-Request-ID"],

@@ -62,43 +62,55 @@ export default function EditorContent({
     {
       label: "Bold",
       icon: Bold,
-      action: () => insertMarkdown("**", "**"),
+      action: () =>
+        insertMarkdown("**", "**"),
     },
+
     {
       label: "Italic",
       icon: Italic,
-      action: () => insertMarkdown("*", "*"),
+      action: () =>
+        insertMarkdown("*", "*"),
     },
+
     {
       label: "Heading",
       icon: Heading2,
-      action: () => insertMarkdown("## "),
+      action: () =>
+        insertMarkdown("## "),
     },
+
     {
       label: "Quote",
       icon: Quote,
-      action: () => insertMarkdown("> "),
+      action: () =>
+        insertMarkdown("> "),
     },
+
     {
       label: "Bullet list",
       icon: List,
-      action: () => insertMarkdown("- "),
+      action: () =>
+        insertMarkdown("- "),
     },
+
     {
       label: "Numbered list",
       icon: ListOrdered,
-      action: () => insertMarkdown("1. "),
+      action: () =>
+        insertMarkdown("1. "),
     },
+
     {
       label: "Code",
       icon: Code2,
-      action: () => insertMarkdown("`", "`"),
+      action: () =>
+        insertMarkdown("`", "`"),
     },
   ];
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-background transition-colors">
-      {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 border-b border-border bg-muted/40 p-2">
         {toolbar.map(
           ({
@@ -130,7 +142,6 @@ export default function EditorContent({
         )}
       </div>
 
-      {/* Editor */}
       <textarea
         id="post-content"
         value={value}
@@ -156,7 +167,6 @@ export default function EditorContent({
         "
       />
 
-      {/* Footer */}
       <div
         className="
           border-t border-border

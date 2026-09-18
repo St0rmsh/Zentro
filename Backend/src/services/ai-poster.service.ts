@@ -434,7 +434,7 @@ const formatContentWithGemini = async (content: string): Promise<AIPostData> => 
 
     const model =
         new ChatGoogleGenerativeAI({
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             maxOutputTokens: 2048,
             apiKey:
                 process.env.GEMINI_API_KEY

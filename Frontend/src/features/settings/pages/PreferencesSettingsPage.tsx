@@ -4,7 +4,12 @@ import {
   useState,
   type MouseEvent,
 } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+
+import {
+  AnimatePresence,
+  motion,
+} from "framer-motion";
+
 import {
   Check,
   ChevronDown,
@@ -15,9 +20,13 @@ import {
   Bookmark,
   UserPlus,
 } from "lucide-react";
+
 import { useTranslation } from "react-i18next";
 
-import { useAppDispatch, useAppSelector } from "@/shared/hooks";
+import {
+  useAppDispatch,
+  useAppSelector,
+} from "@/shared/hooks";
 
 import {
   setLanguage,
@@ -78,7 +87,9 @@ const LANGUAGE_OPTIONS: LanguageOption[] = [
 
 interface LanguageSelectorProps {
   value: Language;
-  onChange: (language: Language) => void;
+  onChange: (
+    language: Language
+  ) => void;
   disabled?: boolean;
 }
 
@@ -87,31 +98,44 @@ const LanguageSelector = ({
   onChange,
   disabled = false,
 }: LanguageSelectorProps) => {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] =
+    useState(false);
 
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef =
+    useRef<HTMLDivElement>(null);
 
   const selectedLanguage =
-    LANGUAGE_OPTIONS.find((option) => option.value === value) ??
-    LANGUAGE_OPTIONS[0];
+    LANGUAGE_OPTIONS.find(
+      (option) =>
+        option.value === value
+    ) ?? LANGUAGE_OPTIONS[0];
 
   useEffect(() => {
     if (!open) {
       return;
     }
 
-    const handlePointerDown = (event: MouseEvent | globalThis.MouseEvent) => {
-      const target = event.target as Node;
+    const handlePointerDown = (
+      event:
+        | MouseEvent
+        | globalThis.MouseEvent
+    ) => {
+      const target =
+        event.target as Node;
 
       if (
         containerRef.current &&
-        !containerRef.current.contains(target)
+        !containerRef.current.contains(
+          target
+        )
       ) {
         setOpen(false);
       }
     };
 
-    const handleEscape = (event: KeyboardEvent) => {
+    const handleEscape = (
+      event: KeyboardEvent
+    ) => {
       if (event.key === "Escape") {
         setOpen(false);
       }
@@ -122,7 +146,10 @@ const LanguageSelector = ({
       handlePointerDown as EventListener
     );
 
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener(
+      "keydown",
+      handleEscape
+    );
 
     return () => {
       document.removeEventListener(
@@ -137,7 +164,9 @@ const LanguageSelector = ({
     };
   }, [open]);
 
-  const handleSelect = (language: Language) => {
+  const handleSelect = (
+    language: Language
+  ) => {
     onChange(language);
     setOpen(false);
   };
@@ -147,13 +176,16 @@ const LanguageSelector = ({
       ref={containerRef}
       className="relative w-full"
     >
-      {/* Trigger */}
       <button
         type="button"
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
+        onClick={() =>
+          setOpen(
+            (current) => !current
+          )
+        }
         className={[
           "group flex w-full items-center gap-3",
           "rounded-xl border",
@@ -168,7 +200,6 @@ const LanguageSelector = ({
             : "border-border hover:border-primary/50",
         ].join(" ")}
       >
-        {/* Globe */}
         <span
           className={[
             "flex h-10 w-10 shrink-0 items-center justify-center",
@@ -184,7 +215,6 @@ const LanguageSelector = ({
           <Globe2 className="h-5 w-5" />
         </span>
 
-        {/* Language name */}
         <span className="min-w-0 flex-1">
           <span className="block text-[13px] font-medium text-muted-foreground">
             Language
@@ -195,7 +225,6 @@ const LanguageSelector = ({
           </span>
         </span>
 
-        {/* Code */}
         <span
           className={[
             "hidden shrink-0 rounded-md border px-2 py-1",
@@ -208,17 +237,17 @@ const LanguageSelector = ({
           {selectedLanguage.code}
         </span>
 
-        {/* Chevron */}
         <ChevronDown
           className={[
             "h-4 w-4 shrink-0 text-muted-foreground",
             "transition-transform duration-200",
-            open ? "rotate-180 text-foreground" : "",
+            open
+              ? "rotate-180 text-foreground"
+              : "",
           ].join(" ")}
         />
       </button>
 
-      {/* Dropdown */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -252,7 +281,6 @@ const LanguageSelector = ({
               "ring-1 ring-black/5 dark:ring-white/10",
             ].join(" ")}
           >
-            {/* Dropdown header */}
             <div className="border-b border-border bg-muted/30 px-3 py-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
@@ -263,85 +291,91 @@ const LanguageSelector = ({
               </div>
             </div>
 
-            {/* Options */}
             <div
               role="listbox"
               aria-label="Select language"
               className="p-1.5"
             >
-              {LANGUAGE_OPTIONS.map((option) => {
-                const isSelected = option.value === value;
+              {LANGUAGE_OPTIONS.map(
+                (option) => {
+                  const isSelected =
+                    option.value ===
+                    value;
 
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    onClick={() => handleSelect(option.value)}
-                    className={[
-                      "flex w-full items-center gap-3",
-                      "rounded-lg px-2.5 py-2.5",
-                      "text-left",
-                      "transition-colors duration-150",
-                      isSelected
-                        ? "bg-primary/10"
-                        : "hover:bg-muted",
-                    ].join(" ")}
-                  >
-                    {/* Language icon */}
-                    <span
-                      className={[
-                        "flex h-9 w-9 shrink-0 items-center justify-center",
-                        "rounded-lg border",
+                  return (
+                    <button
+                      key={
+                        option.value
+                      }
+                      type="button"
+                      role="option"
+                      aria-selected={
                         isSelected
-                          ? "border-primary/20 bg-primary/10 text-primary"
-                          : "border-border bg-background text-muted-foreground",
+                      }
+                      onClick={() =>
+                        handleSelect(
+                          option.value
+                        )
+                      }
+                      className={[
+                        "flex w-full items-center gap-3",
+                        "rounded-lg px-2.5 py-2.5",
+                        "text-left",
+                        "transition-colors duration-150",
+                        isSelected
+                          ? "bg-primary/10"
+                          : "hover:bg-muted",
                       ].join(" ")}
                     >
-                      <Globe2 className="h-4 w-4" />
-                    </span>
-
-                    {/* Text */}
-                    <span className="min-w-0 flex-1">
                       <span
                         className={[
-                          "block truncate text-sm font-medium",
+                          "flex h-9 w-9 shrink-0 items-center justify-center",
+                          "rounded-lg border",
                           isSelected
-                            ? "text-foreground"
-                            : "text-foreground",
+                            ? "border-primary/20 bg-primary/10 text-primary"
+                            : "border-border bg-background text-muted-foreground",
                         ].join(" ")}
                       >
-                        {option.nativeName}
+                        <Globe2 className="h-4 w-4" />
                       </span>
 
-                      <span className="mt-0.5 block text-xs text-muted-foreground">
-                        {option.name}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-foreground">
+                          {
+                            option.nativeName
+                          }
+                        </span>
+
+                        <span className="mt-0.5 block text-xs text-muted-foreground">
+                          {
+                            option.name
+                          }
+                        </span>
                       </span>
-                    </span>
 
-                    {/* Code */}
-                    <span
-                      className={[
-                        "shrink-0 rounded-md border px-2 py-1",
-                        "text-[10px] font-bold tracking-wide",
-                        isSelected
-                          ? "border-primary/20 bg-primary/10 text-primary"
-                          : "border-border bg-muted text-muted-foreground",
-                      ].join(" ")}
-                    >
-                      {option.code}
-                    </span>
+                      <span
+                        className={[
+                          "shrink-0 rounded-md border px-2 py-1",
+                          "text-[10px] font-bold tracking-wide",
+                          isSelected
+                            ? "border-primary/20 bg-primary/10 text-primary"
+                            : "border-border bg-muted text-muted-foreground",
+                        ].join(" ")}
+                      >
+                        {
+                          option.code
+                        }
+                      </span>
 
-                    {/* Selected */}
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                      {isSelected && (
-                        <Check className="h-4 w-4 text-primary" />
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                        {isSelected && (
+                          <Check className="h-4 w-4 text-primary" />
+                        )}
+                      </span>
+                    </button>
+                  );
+                }
+              )}
             </div>
           </motion.div>
         )}
@@ -359,7 +393,9 @@ interface PreferenceRowProps {
   title: string;
   description: string;
   checked: boolean;
-  onChange: (checked: boolean) => void;
+  onChange: (
+    checked: boolean
+  ) => void;
   disabled?: boolean;
 }
 
@@ -390,8 +426,13 @@ const PreferenceRow = ({
       </div>
 
       <PreferenceToggle
+        id={`preference-${title
+          .toLowerCase()
+          .replace(/\s+/g, "-")}`}
+        title={title}
+        description={description}
         checked={checked}
-        onChange={onChange}
+        onCheckedChange={onChange}
         disabled={disabled}
       />
     </div>
@@ -402,403 +443,575 @@ const PreferenceRow = ({
 /*                              Main Page                                     */
 /* -------------------------------------------------------------------------- */
 
-const PreferencesSettingsPage = () => {
-  const dispatch = useAppDispatch();
+const PreferencesSettingsPage =
+  () => {
+    const dispatch =
+      useAppDispatch();
 
-  const { t, i18n } = useTranslation();
+    const { t, i18n } =
+      useTranslation();
 
-  const language = useAppSelector(
-    (state) => state.settings.language
-  );
+    const language =
+      useAppSelector(
+        (state) =>
+          state.settings.language
+      );
 
-  const preferences = useAppSelector(
-    (state) => state.settings.preferences
-  );
+    const preferences =
+      useAppSelector(
+        (state) =>
+          state.settings.preferences
+      );
 
-  const [loading, setLoading] = useState(true);
+    const [loading, setLoading] =
+      useState(true);
 
-  const [savingLanguage, setSavingLanguage] = useState(false);
+    const [
+      savingLanguage,
+      setSavingLanguage,
+    ] = useState(false);
 
-  const [savingPreference, setSavingPreference] =
-    useState<string | null>(null);
+    const [
+      savingPreference,
+      setSavingPreference,
+    ] = useState<string | null>(
+      null
+    );
 
-  const [notificationPreferences, setNotificationPreferences] =
-    useState({
-      likes: preferences?.notifications?.likes ?? true,
-      comments: preferences?.notifications?.comments ?? true,
-      follows: preferences?.notifications?.follows ?? true,
-      mentions: preferences?.notifications?.mentions ?? true,
-      bookmarks: preferences?.notifications?.bookmarks ?? true,
+    const [
+      notificationPreferences,
+      setNotificationPreferences,
+    ] = useState({
+      likes:
+        preferences.notifications
+          .likes,
+
+      comments:
+        preferences.notifications
+          .comments,
+
+      follows:
+        preferences.notifications
+          .follows,
+
+      mentions:
+        preferences.notifications
+          .mentions,
+
+      bookmarks:
+        preferences.notifications
+          .bookmarks,
     });
 
-  /* ------------------------------------------------------------------------ */
-  /*                              Load Settings                               */
-  /* ------------------------------------------------------------------------ */
+    /* ---------------------------------------------------------------------- */
+    /*                              Load Settings                             */
+    /* ---------------------------------------------------------------------- */
 
-  useEffect(() => {
-    let mounted = true;
+    useEffect(() => {
+      let mounted = true;
 
-    const loadSettings = async () => {
-      try {
-        setLoading(true);
+      const loadSettings =
+        async () => {
+          try {
+            setLoading(true);
 
-        const response = await authService.getSettings();
+            const settings =
+              await authService.getSettings();
 
-        if (!mounted) {
+            if (!mounted) {
+              return;
+            }
+
+            /* -------------------------------- */
+            /* Language                         */
+            /* -------------------------------- */
+
+            if (
+              settings?.settings
+                ?.language
+            ) {
+              const nextLanguage =
+                settings.settings
+                  .language;
+
+              dispatch(
+                setLanguage(
+                  nextLanguage
+                )
+              );
+
+              await i18n.changeLanguage(
+                nextLanguage
+              );
+            }
+
+            /* -------------------------------- */
+            /* General Preferences              */
+            /* -------------------------------- */
+
+            if (
+              settings?.settings
+            ) {
+              dispatch(
+                updatePreferences({
+                  reducedMotion:
+                    settings.settings
+                      .reducedMotion,
+
+                  compactMode:
+                    settings.settings
+                      .compactMode,
+
+                  autoPlayMedia:
+                    settings.settings
+                      .autoPlayMedia,
+                })
+              );
+            }
+
+            /* -------------------------------- */
+            /* Notifications                    */
+            /* -------------------------------- */
+
+            if (
+              settings?.notificationPreferences
+            ) {
+              const notifications =
+                settings.notificationPreferences;
+
+              setNotificationPreferences(
+                {
+                  likes:
+                    notifications.likes ??
+                    true,
+
+                  comments:
+                    notifications.comments ??
+                    true,
+
+                  follows:
+                    notifications.follows ??
+                    true,
+
+                  mentions:
+                    notifications.mentions ??
+                    true,
+
+                  bookmarks:
+                    notifications.bookmarks ??
+                    true,
+                }
+              );
+
+              dispatch(
+                updatePreferences({
+                  notifications: {
+                    likes:
+                      notifications.likes ??
+                      true,
+
+                    comments:
+                      notifications.comments ??
+                      true,
+
+                    follows:
+                      notifications.follows ??
+                      true,
+
+                    mentions:
+                      notifications.mentions ??
+                      true,
+
+                    bookmarks:
+                      notifications.bookmarks ??
+                      true,
+                  },
+                })
+              );
+            }
+          } catch (error) {
+            console.error(
+              "Failed to load preferences:",
+              error
+            );
+          } finally {
+            if (mounted) {
+              setLoading(false);
+            }
+          }
+        };
+
+      void loadSettings();
+
+      return () => {
+        mounted = false;
+      };
+    }, [dispatch, i18n]);
+
+    /* ---------------------------------------------------------------------- */
+    /*                         Language Change                                */
+    /* ---------------------------------------------------------------------- */
+
+    const handleLanguageChange =
+      async (
+        nextLanguage: Language
+      ) => {
+        if (
+          nextLanguage ===
+            language ||
+          savingLanguage
+        ) {
           return;
         }
 
-        const settings = response?.data ?? response;
+        const previousLanguage =
+          language;
 
-        if (settings?.language) {
-          dispatch(
-            setLanguage(settings.language as Language)
+        try {
+          setSavingLanguage(
+            true
           );
 
-          await i18n.changeLanguage(settings.language);
-        }
-
-        if (settings?.preferences) {
           dispatch(
-            updatePreferences(settings.preferences)
+            setLanguage(
+              nextLanguage
+            )
           );
 
-          if (settings.preferences.notifications) {
-            setNotificationPreferences({
-              likes:
-                settings.preferences.notifications.likes ??
-                true,
+          await i18n.changeLanguage(
+            nextLanguage
+          );
 
-              comments:
-                settings.preferences.notifications.comments ??
-                true,
+          await authService.updateSettings(
+            {
+              language:
+                nextLanguage,
+            }
+          );
+        } catch (error) {
+          console.error(
+            "Failed to update language:",
+            error
+          );
 
-              follows:
-                settings.preferences.notifications.follows ??
-                true,
+          dispatch(
+            setLanguage(
+              previousLanguage
+            )
+          );
 
-              mentions:
-                settings.preferences.notifications.mentions ??
-                true,
-
-              bookmarks:
-                settings.preferences.notifications.bookmarks ??
-                true,
-            });
-          }
+          await i18n.changeLanguage(
+            previousLanguage
+          );
+        } finally {
+          setSavingLanguage(
+            false
+          );
         }
-      } catch (error) {
-        console.error(
-          "Failed to load preferences:",
-          error
-        );
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void loadSettings();
-
-    return () => {
-      mounted = false;
-    };
-  }, [dispatch, i18n]);
-
-  /* ------------------------------------------------------------------------ */
-  /*                         Language Change                                  */
-  /* ------------------------------------------------------------------------ */
-
-  const handleLanguageChange = async (
-    nextLanguage: Language
-  ) => {
-    if (
-      nextLanguage === language ||
-      savingLanguage
-    ) {
-      return;
-    }
-
-    const previousLanguage = language;
-
-    try {
-      setSavingLanguage(true);
-
-      dispatch(setLanguage(nextLanguage));
-
-      await i18n.changeLanguage(nextLanguage);
-
-      await authService.updateSettings({
-        language: nextLanguage,
-      });
-    } catch (error) {
-      console.error(
-        "Failed to update language:",
-        error
-      );
-
-      dispatch(setLanguage(previousLanguage));
-
-      await i18n.changeLanguage(previousLanguage);
-    } finally {
-      setSavingLanguage(false);
-    }
-  };
-
-  /* ------------------------------------------------------------------------ */
-  /*                      Notification Preference                             */
-  /* ------------------------------------------------------------------------ */
-
-  const handleNotificationChange = async (
-    key: keyof typeof notificationPreferences,
-    checked: boolean
-  ) => {
-    if (savingPreference) {
-      return;
-    }
-
-    const previousValue =
-      notificationPreferences[key];
-
-    setNotificationPreferences((current) => ({
-      ...current,
-      [key]: checked,
-    }));
-
-    setSavingPreference(key);
-
-    try {
-      const nextNotifications = {
-        ...notificationPreferences,
-        [key]: checked,
       };
 
-      dispatch(
-        updatePreferences({
-          notifications: nextNotifications,
-        }),
-      );
+    /* ---------------------------------------------------------------------- */
+    /*                      Notification Preference                           */
+    /* ---------------------------------------------------------------------- */
 
-      await authService.updateSettings({
-        preferences: {
-          notifications: nextNotifications,
-        },
-      });
-    } catch (error) {
-      console.error(
-        "Failed to update notification preference:",
-        error
-      );
+    const handleNotificationChange =
+      async (
+        key: keyof typeof notificationPreferences,
+        checked: boolean
+      ) => {
+        if (
+          savingPreference
+        ) {
+          return;
+        }
 
-      setNotificationPreferences((current) => ({
-        ...current,
-        [key]: previousValue,
-      }));
+        const previousValue =
+          notificationPreferences[
+            key
+          ];
 
-      dispatch(
-        updatePreferences({
-          notifications: {
+        const nextNotifications =
+          {
             ...notificationPreferences,
-            [key]: previousValue,
-          },
-        }),
-      );
-    } finally {
-      setSavingPreference(null);
-    }
-  };
+            [key]: checked,
+          };
 
-  /* ------------------------------------------------------------------------ */
-  /*                                  UI                                      */
-  /* ------------------------------------------------------------------------ */
+        setNotificationPreferences(
+          nextNotifications
+        );
 
-  return (
-    <div className="min-h-full bg-background">
-      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
-        <SettingsHeader
-          title={t("settings.preferences.title", "Preferences")}
-          description={t(
-            "settings.preferences.description",
-            "Customize your language and notification preferences."
-          )}
-        />
+        setSavingPreference(
+          key
+        );
 
-        <div className="mt-6 space-y-5">
-          {/* ---------------------------------------------------------------- */}
-          {/* Language                                                         */}
-          {/* ---------------------------------------------------------------- */}
+        try {
+          dispatch(
+            updatePreferences({
+              notifications:
+                nextNotifications,
+            })
+          );
 
-          <SettingsCard
+          await authService.updateSettings(
+            {
+              preferences: {
+                notifications:
+                  nextNotifications,
+              },
+            }
+          );
+        } catch (error) {
+          console.error(
+            "Failed to update notification preference:",
+            error
+          );
+
+          setNotificationPreferences(
+            (current) => ({
+              ...current,
+              [key]: previousValue,
+            })
+          );
+
+          dispatch(
+            updatePreferences({
+              notifications: {
+                ...nextNotifications,
+                [key]: previousValue,
+              },
+            })
+          );
+        } finally {
+          setSavingPreference(
+            null
+          );
+        }
+      };
+
+    /* ---------------------------------------------------------------------- */
+    /*                                  UI                                    */
+    /* ---------------------------------------------------------------------- */
+
+    return (
+      <div className="min-h-full bg-background">
+        <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+          <SettingsHeader
             title={t(
-              "settings.preferences.language.title",
-              "Language"
+              "settings.preferences.title",
+              "Preferences"
             )}
             description={t(
-              "settings.preferences.language.description",
-              "Choose the language used throughout SignalHunt."
+              "settings.preferences.description",
+              "Customize your language and notification preferences."
             )}
-            overflow="visible"
-          >
-            <div className="max-w-xl">
-              {loading ? (
-                <div className="h-[66px] animate-pulse rounded-xl border border-border bg-muted/40" />
-              ) : (
-                <LanguageSelector
-                  value={language}
-                  onChange={handleLanguageChange}
-                  disabled={savingLanguage}
-                />
+          />
+
+          <div className="mt-6 space-y-5">
+            {/* ---------------------------------------------------------------- */}
+            {/* Language                                                         */}
+            {/* ---------------------------------------------------------------- */}
+
+            <SettingsCard
+              title={t(
+                "settings.preferences.language.title",
+                "Language"
               )}
-
-              <p className="mt-3 text-xs leading-5 text-muted-foreground">
-                {savingLanguage
-                  ? "Saving your language preference..."
-                  : "Your language preference is saved to your account and used across the application."}
-              </p>
-            </div>
-          </SettingsCard>
-
-          {/* ---------------------------------------------------------------- */}
-          {/* Notifications                                                    */}
-          {/* ---------------------------------------------------------------- */}
-
-          <SettingsCard
-            title={t(
-              "settings.preferences.notifications.title",
-              "Notifications"
-            )}
-            description={t(
-              "settings.preferences.notifications.description",
-              "Choose which activity notifications you want to receive."
-            )}
-          >
-            <div className="divide-y divide-border">
-              <PreferenceRow
-                icon={<Heart className="h-4 w-4" />}
-                title={t(
-                  "settings.preferences.notifications.likes",
-                  "Likes"
+              description={t(
+                "settings.preferences.language.description",
+                "Choose the language used throughout Zentro."
+              )}
+              overflow="visible"
+            >
+              <div className="max-w-xl">
+                {loading ? (
+                  <div className="h-[66px] animate-pulse rounded-xl border border-border bg-muted/40" />
+                ) : (
+                  <LanguageSelector
+                    value={
+                      language
+                    }
+                    onChange={
+                      handleLanguageChange
+                    }
+                    disabled={
+                      savingLanguage
+                    }
+                  />
                 )}
-                description={t(
-                  "settings.preferences.notifications.likesDescription",
-                  "Get notified when someone likes your post."
-                )}
-                checked={notificationPreferences.likes}
-                onChange={(checked) =>
-                  void handleNotificationChange(
-                    "likes",
+
+                <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                  {savingLanguage
+                    ? "Saving your language preference..."
+                    : "Your language preference is saved to your account and used across the application."}
+                </p>
+              </div>
+            </SettingsCard>
+
+            {/* ---------------------------------------------------------------- */}
+            {/* Notifications                                                    */}
+            {/* ---------------------------------------------------------------- */}
+
+            <SettingsCard
+              title={t(
+                "settings.preferences.notifications.title",
+                "Notifications"
+              )}
+              description={t(
+                "settings.preferences.notifications.description",
+                "Choose which activity notifications you want to receive."
+              )}
+            >
+              <div className="divide-y divide-border">
+                <PreferenceRow
+                  icon={
+                    <Heart className="h-4 w-4" />
+                  }
+                  title={t(
+                    "settings.preferences.notifications.likes",
+                    "Likes"
+                  )}
+                  description={t(
+                    "settings.preferences.notifications.likesDescription",
+                    "Get notified when someone likes your post."
+                  )}
+                  checked={
+                    notificationPreferences.likes
+                  }
+                  onChange={(
                     checked
-                  )
-                }
-                disabled={
-                  savingPreference !== null
-                }
-              />
+                  ) =>
+                    void handleNotificationChange(
+                      "likes",
+                      checked
+                    )
+                  }
+                  disabled={
+                    savingPreference !==
+                    null
+                  }
+                />
 
-              <PreferenceRow
-                icon={
-                  <MessageCircle className="h-4 w-4" />
-                }
-                title={t(
-                  "settings.preferences.notifications.comments",
-                  "Comments"
-                )}
-                description={t(
-                  "settings.preferences.notifications.commentsDescription",
-                  "Get notified when someone comments on your post."
-                )}
-                checked={
-                  notificationPreferences.comments
-                }
-                onChange={(checked) =>
-                  void handleNotificationChange(
-                    "comments",
+                <PreferenceRow
+                  icon={
+                    <MessageCircle className="h-4 w-4" />
+                  }
+                  title={t(
+                    "settings.preferences.notifications.comments",
+                    "Comments"
+                  )}
+                  description={t(
+                    "settings.preferences.notifications.commentsDescription",
+                    "Get notified when someone comments on your post."
+                  )}
+                  checked={
+                    notificationPreferences.comments
+                  }
+                  onChange={(
                     checked
-                  )
-                }
-                disabled={
-                  savingPreference !== null
-                }
-              />
+                  ) =>
+                    void handleNotificationChange(
+                      "comments",
+                      checked
+                    )
+                  }
+                  disabled={
+                    savingPreference !==
+                    null
+                  }
+                />
 
-              <PreferenceRow
-                icon={<UserPlus className="h-4 w-4" />}
-                title={t(
-                  "settings.preferences.notifications.follows",
-                  "New followers"
-                )}
-                description={t(
-                  "settings.preferences.notifications.followsDescription",
-                  "Get notified when someone follows you."
-                )}
-                checked={
-                  notificationPreferences.follows
-                }
-                onChange={(checked) =>
-                  void handleNotificationChange(
-                    "follows",
+                <PreferenceRow
+                  icon={
+                    <UserPlus className="h-4 w-4" />
+                  }
+                  title={t(
+                    "settings.preferences.notifications.follows",
+                    "New followers"
+                  )}
+                  description={t(
+                    "settings.preferences.notifications.followsDescription",
+                    "Get notified when someone follows you."
+                  )}
+                  checked={
+                    notificationPreferences.follows
+                  }
+                  onChange={(
                     checked
-                  )
-                }
-                disabled={
-                  savingPreference !== null
-                }
-              />
+                  ) =>
+                    void handleNotificationChange(
+                      "follows",
+                      checked
+                    )
+                  }
+                  disabled={
+                    savingPreference !==
+                    null
+                  }
+                />
 
-              <PreferenceRow
-                icon={<AtSign className="h-4 w-4" />}
-                title={t(
-                  "settings.preferences.notifications.mentions",
-                  "Mentions"
-                )}
-                description={t(
-                  "settings.preferences.notifications.mentionsDescription",
-                  "Get notified when someone mentions you."
-                )}
-                checked={
-                  notificationPreferences.mentions
-                }
-                onChange={(checked) =>
-                  void handleNotificationChange(
-                    "mentions",
+                <PreferenceRow
+                  icon={
+                    <AtSign className="h-4 w-4" />
+                  }
+                  title={t(
+                    "settings.preferences.notifications.mentions",
+                    "Mentions"
+                  )}
+                  description={t(
+                    "settings.preferences.notifications.mentionsDescription",
+                    "Get notified when someone mentions you."
+                  )}
+                  checked={
+                    notificationPreferences.mentions
+                  }
+                  onChange={(
                     checked
-                  )
-                }
-                disabled={
-                  savingPreference !== null
-                }
-              />
+                  ) =>
+                    void handleNotificationChange(
+                      "mentions",
+                      checked
+                    )
+                  }
+                  disabled={
+                    savingPreference !==
+                    null
+                  }
+                />
 
-              <PreferenceRow
-                icon={<Bookmark className="h-4 w-4" />}
-                title={t(
-                  "settings.preferences.notifications.bookmarks",
-                  "Bookmarks"
-                )}
-                description={t(
-                  "settings.preferences.notifications.bookmarksDescription",
-                  "Get notified about bookmark activity."
-                )}
-                checked={
-                  notificationPreferences.bookmarks
-                }
-                onChange={(checked) =>
-                  void handleNotificationChange(
-                    "bookmarks",
+                <PreferenceRow
+                  icon={
+                    <Bookmark className="h-4 w-4" />
+                  }
+                  title={t(
+                    "settings.preferences.notifications.bookmarks",
+                    "Bookmarks"
+                  )}
+                  description={t(
+                    "settings.preferences.notifications.bookmarksDescription",
+                    "Get notified about bookmark activity."
+                  )}
+                  checked={
+                    notificationPreferences.bookmarks
+                  }
+                  onChange={(
                     checked
-                  )
-                }
-                disabled={
-                  savingPreference !== null
-                }
-              />
-            </div>
-          </SettingsCard>
+                  ) =>
+                    void handleNotificationChange(
+                      "bookmarks",
+                      checked
+                    )
+                  }
+                  disabled={
+                    savingPreference !==
+                    null
+                  }
+                />
+              </div>
+            </SettingsCard>
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 export default PreferencesSettingsPage;

@@ -22,7 +22,7 @@ export default function CreatePostPage() {
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [category, setCategory] = useState("");
+  const category = "";
   const [tags, setTags] = useState<string[]>([]);
   const [coverImage, setCoverImage] = useState<string | File | null>(null);
   const [media, setMedia] = useState<File[]>([]);
@@ -94,10 +94,8 @@ export default function CreatePostPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          {/* Left */}
           <div className="flex min-w-0 items-center gap-3">
             <Link
               to="/posts"
@@ -129,7 +127,6 @@ export default function CreatePostPage() {
             </div>
           </div>
 
-          {/* Right */}
           <button
             type="button"
             onClick={handleCreate}
@@ -163,13 +160,10 @@ export default function CreatePostPage() {
         </div>
       </header>
 
-      {/* Main */}
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-          {/* Editor */}
           <section className="min-w-0">
             <div className="overflow-hidden rounded-xl border border-border bg-card">
-              {/* Title */}
               <div className="border-b border-border px-5 py-6 sm:px-8 sm:py-8">
                 <TitleInput
                   value={title}
@@ -177,7 +171,6 @@ export default function CreatePostPage() {
                 />
               </div>
 
-              {/* Content */}
               <div className="px-5 py-6 sm:px-8 sm:py-7">
                 <div className="mb-4">
                   <h2 className="text-sm font-medium text-foreground">
@@ -195,7 +188,6 @@ export default function CreatePostPage() {
                 />
               </div>
 
-              {/* Cover */}
               <div className="border-t border-border px-5 py-6 sm:px-8 sm:py-7">
                 <div className="mb-4">
                   <h2 className="text-sm font-medium text-foreground">
@@ -213,7 +205,6 @@ export default function CreatePostPage() {
                 />
               </div>
 
-              {/* Attachments */}
               <div className="border-t border-border px-5 py-6 sm:px-8 sm:py-7">
                 <div className="mb-4">
                   <h2 className="text-sm font-medium text-foreground">
@@ -233,7 +224,6 @@ export default function CreatePostPage() {
             </div>
           </section>
 
-          {/* Sidebar */}
           <aside className="lg:sticky lg:top-24">
             <PublishPanel
               isPublished={isPublished}

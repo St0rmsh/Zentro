@@ -24,7 +24,7 @@ const generateReplyWithMistral = async (postContent: string, commentContent: str
 
 const generateReplyWithGemini = async (postContent: string, commentContent: string) => {
     const model = new ChatGoogleGenerativeAI({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         maxOutputTokens: 256,
         apiKey: process.env.GEMINI_API_KEY || ""
     });
