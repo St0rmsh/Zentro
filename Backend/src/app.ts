@@ -24,7 +24,15 @@ import mongoose from "mongoose";
 import config from "./config/config.js";
 import passport from "./config/passport.js";
 import redisClient from "./config/cache.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+
+
 const app = express()
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 app.set("trust proxy", config.TRUST_PROXY);
 
@@ -141,6 +149,22 @@ app.use("/api/messages", messageRouter)
 app.use("/api/reading", readingRouter);
 
 
+
+// Serve frontend
+const publicPath = path.join(__dirname, "../public");
+
+app.use(express.static(publicPath));
+
+// React Router fallback
+
+app.get("/{*splat}", (req, res, next) => {
+    if (req.path.startsWith("/api/")) {
+        return next();
+    }
+
+    res.sendFile(path.join(publicPath, "index.html"));
+});
+
 app.use((_req, res) => {
     res.status(404).json({ success: false, message: "Route not found" });
 });
@@ -151,5 +175,8 @@ app.use((error: unknown, req: express.Request, res: express.Response, _next: exp
     console.error("Request failed", { requestId: res.locals.requestId, method: req.method, path: req.path, error });
     res.status(status).json({ success: false, message, requestId: res.locals.requestId });
 });
+
+
+
 
 export default app
