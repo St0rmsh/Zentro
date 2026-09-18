@@ -11,31 +11,31 @@
 // were set on Render — this is why the Static Site would build fine but
 // every API call would fail (or hit the visitor's own machine) in the
 // browser.
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-export const API_VERSION = import.meta.env.VITE_API_VERSION || "v1";
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "https://zentro-pwp3.onrender.com/api";
 
-// Socket.IO Configuration
-export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3000";
+export const API_VERSION =
+  import.meta.env.VITE_API_VERSION || "v1";
 
-// ImageKit Configuration
-export const IMAGEKIT_URL = import.meta.env.VITE_IMAGEKIT_URL || "https://ik.imagekit.io/";
+export const SOCKET_URL =
+  import.meta.env.VITE_SOCKET_URL || "https://zentro-pwp3.onrender.com";
 
-// Environment
+export const IMAGEKIT_URL =
+  import.meta.env.VITE_IMAGEKIT_URL || "https://ik.imagekit.io/";
+
 export const IS_PRODUCTION = import.meta.env.PROD;
 export const IS_DEVELOPMENT = import.meta.env.DEV;
-export const ENV = (import.meta.env.VITE_ENV || "development") as "development" | "staging" | "production";
 
-// Feature Flags
+export const ENV = (
+  import.meta.env.VITE_ENV || "production"
+) as "development" | "staging" | "production";
+
 export const FEATURES = {
   SOCKET_ENABLED: import.meta.env.VITE_ENABLE_SOCKET === "true",
   PWA_ENABLED: import.meta.env.VITE_ENABLE_PWA === "true",
   ANALYTICS_ENABLED: import.meta.env.VITE_ENABLE_ANALYTICS === "true",
 } as const;
 
-/**
- * Environment configuration object
- * Provides centralized access to all environment variables
- */
 export const envConfig = {
   api: {
     baseURL: API_BASE_URL,

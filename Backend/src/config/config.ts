@@ -4,8 +4,7 @@ dotenv.config()
 /**
  * Hard requirements: the server genuinely cannot run without these.
  * Everything else degrades gracefully with a loud warning instead of
- * crashing the container on boot (which on Render means an endless
- * deploy-fail loop).
+ * crashing the container on boot.
  */
 if (!process.env.MONGO_URI) {
     throw new Error("MONGO_URI is undefined")
@@ -34,14 +33,26 @@ const IS_PRODUCTION = NODE_ENV === "production"
 const REDIS_URL = process.env.REDIS_URL || ""
 
 if (!REDIS_URL && !process.env.REDIS_HOST) {
-    console.warn("[config] WARNING: no REDIS_URL or REDIS_HOST set — falling back to localhost:6379.")
+    console.warn(
+        "[config] WARNING: no REDIS_URL or REDIS_HOST set — falling back to localhost:6379."
+    )
 }
 
 /**
- * Allowed browser origins. FRONTEND_ORIGINS is a comma-separated list and
- * is the single source of truth for both Express CORS and Socket.IO CORS.
+ * Allowed browser origins.
+ *
+ * Production:
+ * https://zentro-pwp3.onrender.com
+ *
+ * Local development:
+ * http://localhost:5173
  */
-const rawOrigins = process.env.FRONTEND_ORIGINS || process.env.FRONTEND_ORIGIN || "http://localhost:5173"
+const rawOrigins =
+    process.env.FRONTEND_ORIGINS ||
+    process.env.FRONTEND_ORIGIN ||
+    (IS_PRODUCTION
+        ? "https://zentro-pwp3.onrender.com"
+        : "http://localhost:5173")
 
 const FRONTEND_ORIGINS = rawOrigins
     .split(",")
@@ -49,46 +60,72 @@ const FRONTEND_ORIGINS = rawOrigins
     .filter(Boolean)
 
 // Primary origin — used for OAuth redirects back to the SPA.
-const FRONTEND_ORIGIN = FRONTEND_ORIGINS[0] || "http://localhost:5173"
+const FRONTEND_ORIGIN =
+    FRONTEND_ORIGINS[0] ||
+    (IS_PRODUCTION
+        ? "https://zentro-pwp3.onrender.com"
+        : "http://localhost:5173")
 
 /**
  * Cookie policy.
- * On Render the API and the SPA sit on different onrender.com subdomains,
- * which browsers treat as cross-site. Cross-site cookies REQUIRE
- * SameSite=None AND Secure=true, or they are silently dropped and every
- * authenticated request 401s. Locally (same-origin via the Vite proxy)
- * we keep the stricter "lax" so nothing is loosened in development.
+ *
+ * Since the frontend and backend are now served from the SAME
+ * Render origin, SameSite=Lax is sufficient for normal authentication.
+ *
+ * If you later separate frontend and backend onto different domains,
+ * use SameSite=None + Secure=true.
  */
-const COOKIE_SAMESITE = (process.env.COOKIE_SAMESITE || (IS_PRODUCTION ? "none" : "lax")) as "none" | "lax" | "strict"
+const COOKIE_SAMESITE = (
+    process.env.COOKIE_SAMESITE ||
+    "lax"
+) as "none" | "lax" | "strict"
+
 const COOKIE_SECURE = process.env.COOKIE_SECURE
     ? process.env.COOKIE_SECURE === "true"
-    : COOKIE_SAMESITE === "none" || IS_PRODUCTION
+    : IS_PRODUCTION
 
 if (COOKIE_SAMESITE === "none" && !COOKIE_SECURE) {
-    console.warn("[config] WARNING: COOKIE_SAMESITE=none requires COOKIE_SECURE=true. Browsers will reject these cookies.")
+    console.warn(
+        "[config] WARNING: COOKIE_SAMESITE=none requires COOKIE_SECURE=true. Browsers will reject these cookies."
+    )
 }
 
-// Optional integrations — warn, don't throw.
+/**
+ * Optional integrations — warn, don't throw.
+ */
 if (!process.env.GOOGLE_USER || !process.env.GOOGLE_PASS) {
-    console.warn("[config] WARNING: GOOGLE_USER / GOOGLE_PASS not set — OTP and transactional email will fail.")
+    console.warn(
+        "[config] WARNING: GOOGLE_USER / GOOGLE_PASS not set — OTP and transactional email will fail."
+    )
 }
 
 if (!process.env.IMAGEKIT_PUBLIC_KEY || !process.env.IMAGEKIT_PRIVATE_KEY) {
-    console.warn("[config] WARNING: IMAGEKIT keys not set — image upload will fail.")
+    console.warn(
+        "[config] WARNING: IMAGEKIT keys not set — image upload will fail."
+    )
 }
 
 if (!process.env.TAVILY_API_KEY) {
-    console.warn("[config] WARNING: TAVILY_API_KEY is not set — AI Poster job will be skipped.")
+    console.warn(
+        "[config] WARNING: TAVILY_API_KEY is not set — AI Poster job will be skipped."
+    )
 }
 
 if (!process.env.MISTRAL_API_KEY && !process.env.GEMINI_API_KEY) {
-    console.warn("[config] WARNING: Neither MISTRAL_API_KEY nor GEMINI_API_KEY is set — AI Poster job will be skipped.")
+    console.warn(
+        "[config] WARNING: Neither MISTRAL_API_KEY nor GEMINI_API_KEY is set — AI Poster job will be skipped."
+    )
 } else {
     if (!process.env.MISTRAL_API_KEY) {
-        console.warn("[config] WARNING: MISTRAL_API_KEY is not set — AI Poster will go straight to Gemini.")
+        console.warn(
+            "[config] WARNING: MISTRAL_API_KEY is not set — AI Poster will go straight to Gemini."
+        )
     }
+
     if (!process.env.GEMINI_API_KEY) {
-        console.warn("[config] WARNING: GEMINI_API_KEY is not set — AI Poster has no fallback if Mistral fails.")
+        console.warn(
+            "[config] WARNING: GEMINI_API_KEY is not set — AI Poster has no fallback if Mistral fails."
+        )
     }
 }
 
@@ -119,20 +156,31 @@ const config = {
     COOKIE_SAMESITE,
     COOKIE_SECURE,
 
-    // Render always sits behind a proxy — default this to true in production
-    // so req.ip, rate limiting and `secure` cookies resolve correctly.
-    TRUST_PROXY: process.env.TRUST_PROXY ? process.env.TRUST_PROXY === "true" : IS_PRODUCTION,
+    // Render always sits behind a proxy.
+    TRUST_PROXY: process.env.TRUST_PROXY
+        ? process.env.TRUST_PROXY === "true"
+        : IS_PRODUCTION,
 
     // Skip the hardcoded Google DNS override unless explicitly opted in.
-    // Forcing 8.8.8.8 can break MongoDB Atlas SRV resolution on Render.
     CUSTOM_DNS: process.env.CUSTOM_DNS === "true",
 
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
-    GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/api/auth/google/callback",
+
+    GOOGLE_CALLBACK_URL:
+        process.env.GOOGLE_CALLBACK_URL ||
+        (IS_PRODUCTION
+            ? "https://zentro-pwp3.onrender.com/api/auth/google/callback"
+            : "http://localhost:3000/api/auth/google/callback"),
+
     GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
     GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
-    GITHUB_CALLBACK_URL: process.env.GITHUB_CALLBACK_URL || "http://localhost:3000/api/auth/github/callback",
+
+    GITHUB_CALLBACK_URL:
+        process.env.GITHUB_CALLBACK_URL ||
+        (IS_PRODUCTION
+            ? "https://zentro-pwp3.onrender.com/api/auth/github/callback"
+            : "http://localhost:3000/api/auth/github/callback"),
 
     MISTRAL_API_KEY: process.env.MISTRAL_API_KEY,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
