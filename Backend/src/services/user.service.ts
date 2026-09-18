@@ -34,6 +34,22 @@ export const registerUserService = async (data: RegisterBody) => {
             email: normalizedEmail,
         });
 
+        console.log("========== REGISTER DEBUG ==========");
+console.log("Email received:", normalizedEmail);
+console.log("Mongo database:", UserModel.db.name);
+console.log("Mongo host:", UserModel.db.host);
+console.log(
+    "Existing user:",
+    existingEmail
+        ? {
+              id: existingEmail._id,
+              email: existingEmail.email,
+              username: existingEmail.username,
+          }
+        : null
+);
+console.log("====================================");
+
         if (existingEmail) {
             throw new Error("Email already registered");
         }
