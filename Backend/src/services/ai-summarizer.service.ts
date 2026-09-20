@@ -1,4 +1,5 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatAnthropic } from "@langchain/anthropic";
 
 type ContentType =
     | "greeting"
@@ -303,6 +304,74 @@ ${content}
 `;
 };
 
+/* ============================================================
+   GEMINI
+============================================================ */
+
+const summarizeWithGemini = async (prompt: string): Promise<string> => {
+    if (!process.env.GEMINI_API_KEY) {
+        throw new Error("GEMINI_API_KEY is not configured.");
+    }
+
+    const model = new ChatGoogleGenerativeAI({
+        model: "gemini-2.5-flash",
+        maxOutputTokens: 256,
+        apiKey: process.env.GEMINI_API_KEY,
+    });
+
+    const res = await model.invoke(prompt);
+
+    let summaryText =
+        typeof res.content === "string"
+            ? res.content
+            : JSON.stringify(res.content);
+
+    summaryText = summaryText
+        .replace(/```markdown/gi, "")
+        .replace(/```/g, "")
+        .trim();
+
+    if (!summaryText) {
+        throw new Error("Gemini returned an empty summary.");
+    }
+
+    return summaryText;
+};
+
+/* ============================================================
+   ANTHROPIC
+============================================================ */
+
+const summarizeWithAnthropic = async (prompt: string): Promise<string> => {
+    if (!process.env.ANTHROPIC_API_KEY) {
+        throw new Error("ANTHROPIC_API_KEY is not configured.");
+    }
+
+    const model = new ChatAnthropic({
+        model: "claude-haiku-4-5-20251001",
+        maxTokens: 256,
+        apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+
+    const res = await model.invoke(prompt);
+
+    let summaryText =
+        typeof res.content === "string"
+            ? res.content
+            : JSON.stringify(res.content);
+
+    summaryText = summaryText
+        .replace(/```markdown/gi, "")
+        .replace(/```/g, "")
+        .trim();
+
+    if (!summaryText) {
+        throw new Error("Anthropic returned an empty summary.");
+    }
+
+    return summaryText;
+};
+
 export const generatePostSummary = async (
     content: string
 ): Promise<string> => {
@@ -336,15 +405,11 @@ export const generatePostSummary = async (
             return localSummary;
         }
 
-        if (!process.env.GEMINI_API_KEY) {
-            throw new Error("GEMINI_API_KEY is not configured.");
+        if (!process.env.GEMINI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
+            throw new Error(
+                "Neither GEMINI_API_KEY nor ANTHROPIC_API_KEY is configured."
+            );
         }
-
-        const model = new ChatGoogleGenerativeAI({
-            model: "gemini-2.5-flash",
-            maxOutputTokens: 256,
-            apiKey: process.env.GEMINI_API_KEY,
-        });
 
         const truncatedContent = cleanContent.substring(0, 3000);
 
@@ -353,23 +418,21 @@ export const generatePostSummary = async (
             contentType
         );
 
-        const res = await model.invoke(prompt);
-
-        let summaryText =
-            typeof res.content === "string"
-                ? res.content
-                : JSON.stringify(res.content);
-
-        summaryText = summaryText
-            .replace(/```markdown/gi, "")
-            .replace(/```/g, "")
-            .trim();
-
-        if (!summaryText) {
-            throw new Error("Gemini returned an empty summary.");
+        // Gemini first, Anthropic as fallback.
+        if (process.env.GEMINI_API_KEY) {
+            try {
+                console.log("AI Summary Provider: Trying Gemini...");
+                return await summarizeWithGemini(prompt);
+            } catch (error) {
+                console.warn(
+                    "Gemini summarization failed, falling back to Anthropic.",
+                    error instanceof Error ? error.message : error
+                );
+            }
         }
 
-        return summaryText;
+        console.log("AI Summary Provider: Trying Anthropic...");
+        return await summarizeWithAnthropic(prompt);
     } catch (error) {
         console.error("AI Summarizer failed:", error);
         throw new Error("Failed to generate summary.");
