@@ -119,6 +119,19 @@ export default function CreatePostPage() {
                 <h1 className="truncate text-sm font-semibold text-foreground sm:text-base">
                   Create Post
                 </h1>
+
+                <span
+                  className={`
+                    hidden items-center rounded-full px-2 py-0.5 text-[11px] font-medium sm:inline-flex
+                    ${
+                      isPublished
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        : "bg-muted text-muted-foreground"
+                    }
+                  `}
+                >
+                  {isPublished ? "Will publish" : "Draft"}
+                </span>
               </div>
 
               <p className="mt-0.5 hidden text-xs text-muted-foreground sm:block">

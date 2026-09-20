@@ -1,10 +1,5 @@
-import {
-  FileImage,
-  Trash2,
-  UploadCloud,
-  Video,
-} from "lucide-react";
-import { useRef } from "react";
+import { Play, Plus, Trash2, UploadCloud } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { uploadService } from "../services/upload.service";
 
 interface MediaUploaderProps {
@@ -12,19 +7,21 @@ interface MediaUploaderProps {
   onChange: (value: File[]) => void;
 }
 
-export default function MediaUploader({
-  value,
-  onChange,
-}: MediaUploaderProps) {
+export default function MediaUploader({ value, onChange }: MediaUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const handleFiles = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = Array.from(event.target.files || []);
+  const previews = useMemo(
+    () =>
+      value.map((file) => ({
+        file,
+        url: URL.createObjectURL(file),
+        isVideo: file.type.startsWith("video/"),
+      })),
+    [value]
+  );
 
-    if (!files.length) return;
-
+  const addFiles = (files: File[]) => {
     const validFiles: File[] = [];
 
     for (const file of files) {
@@ -41,57 +38,98 @@ export default function MediaUploader({
     if (validFiles.length > 0) {
       onChange([...value, ...validFiles]);
     }
+  };
 
-    if (inputRef.current) {
-      inputRef.current.value = "";
-    }
+  const handleFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length) addFiles(files);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(event.dataTransfer.files || []);
+    if (files.length) addFiles(files);
   };
 
   const removeMedia = (index: number) => {
-    onChange(
-      value.filter((_, itemIndex) => itemIndex !== index)
-    );
+    onChange(value.filter((_, itemIndex) => itemIndex !== index));
   };
 
   return (
-    <div className="space-y-4">
-      {/* Upload area */}
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        className="
-          group flex w-full flex-col items-center justify-center
-          rounded-xl border-2 border-dashed border-border
-          bg-muted/30 px-6 py-10 text-center
-          transition-colors
-          hover:border-foreground/30
-          hover:bg-muted/50
-          focus:outline-none
-          focus:ring-2
-          focus:ring-ring
-        "
-      >
-        <div
-          className="
-            mb-3 flex h-11 w-11 items-center justify-center
-            rounded-lg border border-border
-            bg-background
-            text-muted-foreground
-            transition-colors
-            group-hover:text-foreground
-          "
+    <div className="space-y-3">
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        {previews.map(({ file, url, isVideo }, index) => (
+          <div
+            key={`${file.name}-${file.lastModified}-${index}`}
+            className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
+          >
+            {isVideo ? (
+              <>
+                <video src={url} className="h-full w-full object-cover" muted />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                  <Play size={22} className="fill-white text-white" />
+                </div>
+              </>
+            ) : (
+              <img
+                src={url}
+                alt={file.name}
+                className="h-full w-full object-cover"
+              />
+            )}
+
+            <div className="absolute inset-0 flex items-end justify-end bg-black/0 p-1.5 opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100">
+              <button
+                type="button"
+                onClick={() => removeMedia(index)}
+                aria-label={`Remove ${file.name}`}
+                className="
+                  inline-flex h-7 w-7 items-center justify-center rounded-full
+                  bg-white/90 text-destructive transition-colors hover:bg-white
+                "
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
+          </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(event) => {
+            event.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+          className={`
+            group flex aspect-square flex-col items-center justify-center
+            rounded-lg border-2 border-dashed text-center transition-colors
+            focus:outline-none focus:ring-2 focus:ring-ring
+            ${
+              isDragging
+                ? "border-foreground/50 bg-muted/60"
+                : "border-border bg-muted/30 hover:border-foreground/30 hover:bg-muted/50"
+            }
+          `}
         >
-          <UploadCloud size={21} />
-        </div>
+          {isDragging ? (
+            <UploadCloud size={20} className="text-muted-foreground" />
+          ) : (
+            <Plus
+              size={20}
+              className="text-muted-foreground transition-colors group-hover:text-foreground"
+            />
+          )}
 
-        <p className="text-sm font-semibold text-foreground">
-          Add media
-        </p>
-
-        <p className="mt-1 text-xs text-muted-foreground">
-          Images or videos up to 50MB each
-        </p>
-      </button>
+          <span className="mt-1 text-[11px] font-medium text-muted-foreground">
+            Add media
+          </span>
+        </button>
+      </div>
 
       <input
         ref={inputRef}
@@ -102,67 +140,9 @@ export default function MediaUploader({
         onChange={handleFiles}
       />
 
-      {/* Files */}
-      {value.length > 0 && (
-        <div className="space-y-2">
-          {value.map((file, index) => (
-            <div
-              key={`${file.name}-${file.lastModified}-${index}`}
-              className="
-                flex items-center justify-between
-                rounded-lg border border-border
-                bg-background p-3
-              "
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <div
-                  className="
-                    flex h-10 w-10 shrink-0 items-center justify-center
-                    rounded-lg bg-muted
-                    text-muted-foreground
-                  "
-                >
-                  {file.type.startsWith("video/") ? (
-                    <Video size={18} />
-                  ) : (
-                    <FileImage size={18} />
-                  )}
-                </div>
-
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {file.name}
-                  </p>
-
-                  <p className="text-xs text-muted-foreground">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => removeMedia(index)}
-                className="
-                  ml-3 inline-flex h-9 w-9 shrink-0
-                  items-center justify-center
-                  rounded-md
-                  text-muted-foreground
-                  transition-colors
-                  hover:bg-destructive/10
-                  hover:text-destructive
-                  focus:outline-none
-                  focus:ring-2
-                  focus:ring-ring
-                "
-                aria-label={`Remove ${file.name}`}
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+      <p className="text-xs text-muted-foreground">
+        Images or videos up to 50MB each.
+      </p>
     </div>
   );
 }

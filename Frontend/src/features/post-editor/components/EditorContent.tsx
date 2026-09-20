@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   Bold,
   Code2,
@@ -13,14 +14,14 @@ interface EditorContentProps {
   onChange: (value: string) => void;
 }
 
-export default function EditorContent({
-  value,
-  onChange,
-}: EditorContentProps) {
-  const insertMarkdown = (
-    prefix: string,
-    suffix = ""
-  ) => {
+type ToolbarAction = {
+  label: string;
+  icon: typeof Bold;
+  action: () => void;
+};
+
+export default function EditorContent({ value, onChange }: EditorContentProps) {
+  const insertMarkdown = (prefix: string, suffix = "") => {
     const textarea = document.getElementById(
       "post-content"
     ) as HTMLTextAreaElement | null;
@@ -29,154 +30,96 @@ export default function EditorContent({
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-
     const selectedText = value.slice(start, end);
-
-    const replacement =
-      prefix + selectedText + suffix;
-
-    const newValue =
-      value.slice(0, start) +
-      replacement +
-      value.slice(end);
+    const replacement = prefix + selectedText + suffix;
+    const newValue = value.slice(0, start) + replacement + value.slice(end);
 
     onChange(newValue);
 
     requestAnimationFrame(() => {
       textarea.focus();
-
       const cursorPosition =
-        start +
-        prefix.length +
-        selectedText.length +
-        suffix.length;
-
-      textarea.setSelectionRange(
-        cursorPosition,
-        cursorPosition
-      );
+        start + prefix.length + selectedText.length + suffix.length;
+      textarea.setSelectionRange(cursorPosition, cursorPosition);
     });
   };
 
-  const toolbar = [
-    {
-      label: "Bold",
-      icon: Bold,
-      action: () =>
-        insertMarkdown("**", "**"),
-    },
-
-    {
-      label: "Italic",
-      icon: Italic,
-      action: () =>
-        insertMarkdown("*", "*"),
-    },
-
-    {
-      label: "Heading",
-      icon: Heading2,
-      action: () =>
-        insertMarkdown("## "),
-    },
-
-    {
-      label: "Quote",
-      icon: Quote,
-      action: () =>
-        insertMarkdown("> "),
-    },
-
-    {
-      label: "Bullet list",
-      icon: List,
-      action: () =>
-        insertMarkdown("- "),
-    },
-
-    {
-      label: "Numbered list",
-      icon: ListOrdered,
-      action: () =>
-        insertMarkdown("1. "),
-    },
-
-    {
-      label: "Code",
-      icon: Code2,
-      action: () =>
-        insertMarkdown("`", "`"),
-    },
+  const toolbarGroups: ToolbarAction[][] = [
+    [
+      { label: "Bold", icon: Bold, action: () => insertMarkdown("**", "**") },
+      { label: "Italic", icon: Italic, action: () => insertMarkdown("*", "*") },
+    ],
+    [
+      { label: "Heading", icon: Heading2, action: () => insertMarkdown("## ") },
+      { label: "Quote", icon: Quote, action: () => insertMarkdown("> ") },
+    ],
+    [
+      { label: "Bullet list", icon: List, action: () => insertMarkdown("- ") },
+      {
+        label: "Numbered list",
+        icon: ListOrdered,
+        action: () => insertMarkdown("1. "),
+      },
+    ],
+    [{ label: "Code", icon: Code2, action: () => insertMarkdown("`", "`") }],
   ];
+
+  const wordCount = useMemo(
+    () => (value.trim() ? value.trim().split(/\s+/).length : 0),
+    [value]
+  );
+
+  const readingMinutes = Math.max(1, Math.round(wordCount / 200));
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-background transition-colors">
-      <div className="flex flex-wrap items-center gap-1 border-b border-border bg-muted/40 p-2">
-        {toolbar.map(
-          ({
-            label,
-            icon: Icon,
-            action,
-          }) => (
-            <button
-              key={label}
-              type="button"
-              onClick={action}
-              title={label}
-              aria-label={label}
-              className="
-                inline-flex h-9 w-9 items-center justify-center
-                rounded-md
-                text-muted-foreground
-                transition-colors
-                hover:bg-background
-                hover:text-foreground
-                focus:outline-none
-                focus:ring-2
-                focus:ring-ring
-              "
-            >
-              <Icon size={16} />
-            </button>
-          )
-        )}
+      <div className="sticky top-16 z-10 flex flex-wrap items-center gap-1 border-b border-border bg-muted/60 p-2 backdrop-blur">
+        {toolbarGroups.map((group, groupIndex) => (
+          <div key={groupIndex} className="flex items-center gap-1">
+            {group.map(({ label, icon: Icon, action }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={action}
+                title={label}
+                aria-label={label}
+                className="
+                  inline-flex h-9 w-9 items-center justify-center rounded-md
+                  text-muted-foreground transition-colors
+                  hover:bg-background hover:text-foreground
+                  focus:outline-none focus:ring-2 focus:ring-ring
+                "
+              >
+                <Icon size={16} />
+              </button>
+            ))}
+
+            {groupIndex < toolbarGroups.length - 1 && (
+              <span className="mx-1 h-5 w-px bg-border" aria-hidden="true" />
+            )}
+          </div>
+        ))}
       </div>
 
       <textarea
         id="post-content"
         value={value}
-        onChange={(event) =>
-          onChange(event.target.value)
-        }
+        onChange={(event) => onChange(event.target.value)}
         placeholder="Start writing your post..."
         spellCheck
         className="
-          min-h-[420px]
-          w-full
-          resize-y
-          border-0
-          bg-background
-          p-5
-          text-sm
-          leading-7
-          text-foreground
-          outline-none
-          placeholder:text-muted-foreground
-          focus:ring-0
-          sm:p-6
+          min-h-[420px] w-full resize-y border-0 bg-background
+          p-5 font-serif text-base leading-8 text-foreground
+          outline-none placeholder:font-sans placeholder:text-muted-foreground
+          focus:ring-0 sm:p-6
         "
       />
 
-      <div
-        className="
-          border-t border-border
-          bg-muted/40
-          px-4 py-2
-          text-xs
-          text-muted-foreground
-        "
-      >
-        Markdown formatting is supported.
+      <div className="flex items-center justify-between border-t border-border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
+        <span>Markdown formatting is supported.</span>
+        <span className="tabular-nums">
+          {wordCount} {wordCount === 1 ? "word" : "words"} · {readingMinutes} min read
+        </span>
       </div>
     </div>
   );
