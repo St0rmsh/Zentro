@@ -1,1 +1,0 @@
-import{j as e}from"./ui-CEV99eLA.js";const s=()=>e.jsx("div",{className:"flex justify-center items-center h-48",children:e.jsx("div",{className:"animate-spin rounded-full h-8 w-8 border-b-2 border-primary"})});export{s as A};
