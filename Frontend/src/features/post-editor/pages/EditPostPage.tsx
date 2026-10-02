@@ -17,6 +17,38 @@ import PublishPanel from "../components/PublishPanel";
 
 import { postEditorService } from "../services/postEditor.service";
 
+const MAX_TITLE_LENGTH = 120;
+
+type EditorValues = {
+  title: string;
+  content: string;
+  tags: string[];
+  coverImage: string | File | null;
+  mediaCount: number;
+  isPublished: boolean;
+};
+
+/* A small string describing the current form state, used to detect changes */
+const buildSnapshot = (values: EditorValues) =>
+  JSON.stringify({
+    title: values.title,
+    content: values.content,
+    tags: values.tags,
+    cover:
+      values.coverImage instanceof File
+        ? `file:${values.coverImage.name}:${values.coverImage.size}:${values.coverImage.lastModified}`
+        : values.coverImage || "",
+    mediaCount: values.mediaCount,
+    isPublished: values.isPublished,
+  });
+
+const extractPost = (response: any) =>
+  response?.data?.post ||
+  response?.post ||
+  response?.data ||
+  response ||
+  null;
+
 export default function EditPostPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -32,6 +64,24 @@ export default function EditPostPage() {
   const [media, setMedia] = useState<File[]>([]);
   const [isPublished, setIsPublished] = useState(false);
 
+  // The cover URL stored on the server, so we know when it has been removed
+  const [originalCover, setOriginalCover] = useState("");
+
+  // Snapshot of the last loaded/saved state
+  const [baseline, setBaseline] = useState("");
+
+  const currentSnapshot = buildSnapshot({
+    title,
+    content,
+    tags,
+    coverImage,
+    mediaCount: media.length,
+    isPublished,
+  });
+
+  const isDirty = !loading && baseline !== "" && currentSnapshot !== baseline;
+
+  /* ---------- Load ---------- */
   useEffect(() => {
     if (!id) {
       toast.error("Invalid post ID.");
@@ -44,29 +94,38 @@ export default function EditPostPage() {
         setLoading(true);
 
         const response = await postEditorService.getPostForEdit(id);
-
-        const post =
-          response?.data?.post ||
-          response?.post ||
-          response?.data ||
-          response;
+        const post = extractPost(response);
 
         if (!post) {
           throw new Error("Post not found.");
         }
 
+        const loadedTags: string[] = Array.isArray(post.tags) ? post.tags : [];
+        const loadedCover: string = post.coverImage || "";
+
         setTitle(post.title || "");
         setContent(post.content || "");
         setCategory(post.category || "");
-        setTags(Array.isArray(post.tags) ? post.tags : []);
-        setCoverImage(post.coverImage || "");
+        setTags(loadedTags);
+        setCoverImage(loadedCover);
+        setOriginalCover(loadedCover);
         setIsPublished(Boolean(post.isPublished));
+
+        setBaseline(
+          buildSnapshot({
+            title: post.title || "",
+            content: post.content || "",
+            tags: loadedTags,
+            coverImage: loadedCover,
+            mediaCount: 0,
+            isPublished: Boolean(post.isPublished),
+          })
+        );
       } catch (error: any) {
         console.error("Load post error:", error);
 
         toast.error(
-          error?.response?.data?.message ||
-            "Unable to load this post."
+          error?.response?.data?.message || "Unable to load this post."
         );
 
         navigate("/posts");
@@ -78,7 +137,23 @@ export default function EditPostPage() {
     loadPost();
   }, [id, navigate]);
 
+  /* ---------- Warn before closing/reloading with unsaved changes ---------- */
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  /* ---------- Update ---------- */
   const handleUpdate = async () => {
+    if (saving) return;
+
     if (!id) {
       toast.error("Invalid post ID.");
       return;
@@ -86,11 +161,19 @@ export default function EditPostPage() {
 
     if (!title.trim()) {
       toast.error("Please add a title.");
+      document.getElementById("post-title")?.focus();
+      return;
+    }
+
+    if (title.trim().length > MAX_TITLE_LENGTH) {
+      toast.error(`Title must be ${MAX_TITLE_LENGTH} characters or fewer.`);
+      document.getElementById("post-title")?.focus();
       return;
     }
 
     if (!content.trim()) {
       toast.error("Please add some content.");
+      document.getElementById("post-content")?.focus();
       return;
     }
 
@@ -109,6 +192,9 @@ export default function EditPostPage() {
 
       if (coverImage instanceof File) {
         formData.append("coverImage", coverImage);
+      } else if (originalCover && !coverImage) {
+        // The existing cover was removed in the editor
+        formData.append("removeCover", "true");
       }
 
       formData.append("isPublished", String(isPublished));
@@ -117,7 +203,31 @@ export default function EditPostPage() {
         formData.append("media", file);
       });
 
-      await postEditorService.updatePost(id, formData);
+      const response = await postEditorService.updatePost(id, formData);
+
+      // Sync local state with what the server saved
+      const updated = extractPost(response);
+      const savedCover: string =
+        updated && typeof updated.coverImage === "string"
+          ? updated.coverImage
+          : coverImage instanceof File
+          ? ""
+          : (coverImage as string) || "";
+
+      setOriginalCover(savedCover);
+      setCoverImage(savedCover);
+      setMedia([]);
+
+      setBaseline(
+        buildSnapshot({
+          title,
+          content,
+          tags,
+          coverImage: savedCover,
+          mediaCount: 0,
+          isPublished,
+        })
+      );
 
       toast.success(
         isPublished
@@ -128,11 +238,33 @@ export default function EditPostPage() {
       console.error("Update post error:", error);
 
       toast.error(
-        error?.response?.data?.message ||
-          "Failed to update post."
+        error?.response?.data?.message || "Failed to update post."
       );
     } finally {
       setSaving(false);
+    }
+  };
+
+  /* ---------- Ctrl/⌘ + S to save ---------- */
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        handleUpdate();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  });
+
+  /* ---------- Confirm before leaving via the back button ---------- */
+  const handleBackClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (
+      isDirty &&
+      !window.confirm("Discard your unsaved changes?")
+    ) {
+      event.preventDefault();
     }
   };
 
@@ -157,6 +289,7 @@ export default function EditPostPage() {
             <Link
               to="/posts"
               aria-label="Back to posts"
+              onClick={handleBackClick}
               className="
                 flex h-9 w-9 shrink-0 items-center justify-center
                 rounded-md border border-border
@@ -191,8 +324,15 @@ export default function EditPostPage() {
                 </span>
               </div>
 
-              <p className="mt-0.5 hidden text-xs text-muted-foreground sm:block">
-                Update your investigation post
+              <p
+                className="mt-0.5 hidden text-xs text-muted-foreground sm:block"
+                aria-live="polite"
+              >
+                {saving
+                  ? "Saving changes..."
+                  : isDirty
+                  ? "Unsaved changes · Ctrl/⌘ + S to save"
+                  : "All changes saved"}
               </p>
             </div>
           </div>
@@ -206,7 +346,8 @@ export default function EditPostPage() {
               inline-flex h-9 shrink-0 items-center gap-2
               rounded-md bg-primary px-3.5
               text-sm font-medium text-primary-foreground
-              transition-colors hover:bg-primary/90
+              transition-colors hover:bg-primary/90 active:scale-[0.98]
+              focus:outline-none focus:ring-2 focus:ring-ring
               disabled:pointer-events-none disabled:opacity-50
             "
           >
@@ -239,10 +380,7 @@ export default function EditPostPage() {
             <div className="overflow-hidden rounded-xl border border-border bg-card">
               {/* Title */}
               <div className="border-b border-border px-5 py-6 sm:px-8 sm:py-8">
-                <TitleInput
-                  value={title}
-                  onChange={setTitle}
-                />
+                <TitleInput value={title} onChange={setTitle} />
               </div>
 
               {/* Content */}
@@ -257,10 +395,7 @@ export default function EditPostPage() {
                   </p>
                 </div>
 
-                <EditorContent
-                  value={content}
-                  onChange={setContent}
-                />
+                <EditorContent value={content} onChange={setContent} />
               </div>
 
               {/* Cover */}
@@ -275,10 +410,7 @@ export default function EditPostPage() {
                   </p>
                 </div>
 
-                <CoverUploader
-                  value={coverImage}
-                  onChange={setCoverImage}
-                />
+                <CoverUploader value={coverImage} onChange={setCoverImage} />
               </div>
 
               {/* Attachments */}
@@ -293,10 +425,7 @@ export default function EditPostPage() {
                   </p>
                 </div>
 
-                <MediaUploader
-                  value={media}
-                  onChange={setMedia}
-                />
+                <MediaUploader value={media} onChange={setMedia} />
               </div>
             </div>
           </section>

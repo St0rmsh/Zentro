@@ -1,5 +1,6 @@
 import { Check, Globe2, Hash, Lock, Send, X } from "lucide-react";
 import { useState } from "react";
+import { toast } from "react-hot-toast";
 
 interface PublishPanelProps {
   isPublished: boolean;
@@ -9,6 +10,12 @@ interface PublishPanelProps {
   onPublish: () => void;
   loading: boolean;
 }
+
+const MAX_TAGS = 10;
+const MAX_TAG_LENGTH = 30;
+
+const normalizeTag = (raw: string) =>
+  raw.trim().replace(/^#+/, "").replace(/\s+/g, " ").slice(0, MAX_TAG_LENGTH);
 
 export default function PublishPanel({
   isPublished,
@@ -20,22 +27,39 @@ export default function PublishPanel({
 }: PublishPanelProps) {
   const [tagInput, setTagInput] = useState("");
 
-  const addTag = () => {
-    const tag = tagInput.trim().replace(/^#/, "");
-    if (!tag) return;
+  /* ---------- Tags ---------- */
+  const addTags = (rawList: string[]) => {
+    const next = [...tags];
+    let duplicates = 0;
+    let limitHit = false;
 
-    if (
-      tags.some(
-        (existingTag) => existingTag.toLowerCase() === tag.toLowerCase()
-      )
-    ) {
-      setTagInput("");
-      return;
+    for (const raw of rawList) {
+      const tag = normalizeTag(raw);
+      if (!tag) continue;
+
+      if (next.some((t) => t.toLowerCase() === tag.toLowerCase())) {
+        duplicates += 1;
+        continue;
+      }
+
+      if (next.length >= MAX_TAGS) {
+        limitHit = true;
+        break;
+      }
+
+      next.push(tag);
     }
 
-    setTags([...tags, tag]);
+    if (next.length !== tags.length) setTags(next);
+
+    if (limitHit) toast.error(`You can add up to ${MAX_TAGS} tags.`);
+    else if (duplicates > 0)
+      toast(duplicates === 1 ? "That tag is already added." : "Some tags were already added.");
+
     setTagInput("");
   };
+
+  const addTag = () => addTags([tagInput]);
 
   const removeTag = (tag: string) => {
     setTags(tags.filter((item) => item !== tag));
@@ -53,8 +77,21 @@ export default function PublishPanel({
     }
   };
 
+  /* Pasting "ai, react, node" adds three tags at once */
+  const handlePaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
+    const text = event.clipboardData.getData("text");
+
+    if (/[,\n]/.test(text)) {
+      event.preventDefault();
+      addTags(text.split(/[,\n]/));
+    }
+  };
+
+  const atTagLimit = tags.length >= MAX_TAGS;
+
   return (
     <div className="space-y-4">
+      {/* Audience */}
       <div className="rounded-xl border border-border bg-card p-5">
         <div className="mb-4">
           <h2 className="text-sm font-semibold text-foreground">Audience</h2>
@@ -63,15 +100,22 @@ export default function PublishPanel({
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-muted/40 p-1">
+        <div
+          role="radiogroup"
+          aria-label="Post visibility"
+          className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-muted/40 p-1"
+        >
           <button
             type="button"
+            role="radio"
+            aria-checked={!isPublished}
             disabled={loading}
             onClick={() => setIsPublished(false)}
             className={`
               flex items-center justify-center gap-1.5 rounded-md px-3 py-2
               text-sm font-medium transition-colors
               focus:outline-none focus:ring-2 focus:ring-ring
+              disabled:cursor-not-allowed disabled:opacity-60
               ${
                 !isPublished
                   ? "bg-background text-foreground shadow-sm"
@@ -85,12 +129,15 @@ export default function PublishPanel({
 
           <button
             type="button"
+            role="radio"
+            aria-checked={isPublished}
             disabled={loading}
             onClick={() => setIsPublished(true)}
             className={`
               flex items-center justify-center gap-1.5 rounded-md px-3 py-2
               text-sm font-medium transition-colors
               focus:outline-none focus:ring-2 focus:ring-ring
+              disabled:cursor-not-allowed disabled:opacity-60
               ${
                 isPublished
                   ? "bg-background text-foreground shadow-sm"
@@ -103,7 +150,7 @@ export default function PublishPanel({
           </button>
         </div>
 
-        <p className="mt-3 text-xs text-muted-foreground">
+        <p className="mt-3 text-xs text-muted-foreground" aria-live="polite">
           {isPublished
             ? "Visible to everyone as soon as you publish."
             : "Only visible to you until you publish it."}
@@ -116,7 +163,7 @@ export default function PublishPanel({
           className="
             mt-5 flex w-full items-center justify-center gap-2 rounded-lg
             bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground
-            transition-colors hover:bg-primary/90
+            transition-colors hover:bg-primary/90 active:scale-[0.99]
             disabled:cursor-not-allowed disabled:opacity-60
             focus:outline-none focus:ring-2 focus:ring-ring
           "
@@ -140,20 +187,39 @@ export default function PublishPanel({
         </button>
       </div>
 
+      {/* Tags */}
       <div className="rounded-xl border border-border bg-card p-5">
-        <div className="mb-3 flex items-center gap-2">
-          <Hash size={17} className="text-muted-foreground" />
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">Tags</h2>
-            <p className="text-xs text-muted-foreground">
-              Help organize your post.
-            </p>
+        <div className="mb-3 flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Hash size={17} className="text-muted-foreground" />
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Tags</h2>
+              <p className="text-xs text-muted-foreground">
+                Help organize your post.
+              </p>
+            </div>
           </div>
+
+          <span
+            className={`text-xs tabular-nums ${
+              atTagLimit
+                ? "font-medium text-foreground"
+                : "text-muted-foreground"
+            }`}
+          >
+            {tags.length}/{MAX_TAGS}
+          </span>
         </div>
 
         <div
+          onClick={(event) => {
+            // Clicking empty space inside the box focuses the input
+            if (event.target === event.currentTarget) {
+              event.currentTarget.querySelector("input")?.focus();
+            }
+          }}
           className="
-            flex min-h-[46px] flex-wrap items-center gap-1.5 rounded-lg
+            flex min-h-[46px] cursor-text flex-wrap items-center gap-1.5 rounded-lg
             border border-input bg-background px-2.5 py-2
             focus-within:border-ring focus-within:ring-2 focus-within:ring-ring
           "
@@ -162,16 +228,19 @@ export default function PublishPanel({
             <span
               key={tag}
               className="
-                inline-flex items-center gap-1 rounded-full bg-muted/70
+                inline-flex max-w-full items-center gap-1 rounded-full bg-muted/70
                 px-2.5 py-1 text-xs font-medium text-foreground
               "
             >
-              #{tag}
+              <span className="truncate">#{tag}</span>
               <button
                 type="button"
                 onClick={() => removeTag(tag)}
                 aria-label={`Remove ${tag}`}
-                className="rounded-full text-muted-foreground transition-colors hover:text-destructive focus:outline-none"
+                className="
+                  shrink-0 rounded-full text-muted-foreground transition-colors
+                  hover:text-destructive focus:outline-none focus:ring-2 focus:ring-ring
+                "
               >
                 <X size={12} />
               </button>
@@ -182,19 +251,33 @@ export default function PublishPanel({
             value={tagInput}
             onChange={(event) => setTagInput(event.target.value)}
             onKeyDown={handleTagKeyDown}
-            onBlur={addTag}
-            placeholder={tags.length === 0 ? "Add a tag..." : ""}
+            onPaste={handlePaste}
+            onBlur={() => {
+              if (tagInput.trim()) addTag();
+            }}
+            maxLength={MAX_TAG_LENGTH}
+            disabled={atTagLimit}
+            aria-label="Add a tag"
+            placeholder={
+              atTagLimit
+                ? "Tag limit reached"
+                : tags.length === 0
+                ? "Add a tag..."
+                : ""
+            }
             className="
               min-w-[80px] flex-1 border-0 bg-transparent px-1 py-1
-              text-sm text-foreground outline-none
+              text-sm text-foreground caret-foreground outline-none
               placeholder:text-muted-foreground
+              disabled:cursor-not-allowed
               focus:ring-0
             "
           />
         </div>
 
         <p className="mt-2 text-xs text-muted-foreground">
-          Press Enter or comma to add a tag.
+          Press Enter or comma to add. Paste a comma-separated list to add
+          several at once.
         </p>
       </div>
     </div>
