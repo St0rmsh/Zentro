@@ -29,7 +29,6 @@ authRouter.post("/register", registerValidator, registrationController)
 
 
 
-
 //@Method         POST
 //@Route          /api/auth/login
 //@Description    Login a new user

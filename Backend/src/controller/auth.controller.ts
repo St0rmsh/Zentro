@@ -5,19 +5,6 @@ import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import { changePasswordService, deleteAccountService, forgotPasswordService, generateAccessTokenService, getMyProfileService, getPrivacyListsService, getUserSettingsService, loginUserService, logoutService, registerUserService, resetPasswordService, sendOtpService, updateAccountStatusService, updatePrivacyListService, updateUserDetailsService, updateUserSettingsService, verifyOtpService } from "../services/user.service.js";
 
-/**
- * Single source of truth for cookie flags.
- *
- * On Render, the frontend (static site) and backend (web service) live on
- * different onrender.com subdomains, which browsers treat as cross-site.
- * Cross-site cookies are only ever sent if SameSite=None AND Secure=true —
- * "strict" (the previous hardcoded value) silently drops them, which is
- * why login would appear to succeed but every subsequent request 401s.
- *
- * config.COOKIE_SAMESITE / COOKIE_SECURE already resolve this correctly per
- * environment (see config.ts), so every cookie in this file reads from here
- * instead of hardcoding "strict" / NODE_ENV checks individually.
- */
 const accessCookieOptions = {
     httpOnly: true,
     secure: config.COOKIE_SECURE,
