@@ -1,6 +1,7 @@
 import {
   FormEvent,
   KeyboardEvent,
+  ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -14,17 +15,12 @@ import {
   CheckCheck,
   ChevronDown,
   Copy,
-  Image as ImageIcon,
   MessageCircle,
-  MoreVertical,
-  Paperclip,
   Reply,
   Search,
   Send,
-  Smile,
   Sparkles,
   SquarePen,
-  Trash2,
   UserRound,
   X,
 } from "lucide-react";
@@ -44,6 +40,14 @@ import {
 /* -------------------------------------------------------------------------- */
 
 const ZENTRO_AI_USERNAME = "zentro-ai";
+
+const AI_SUGGESTIONS = [
+  "What's trending?",
+  "Recommend a post",
+  "Help me write",
+];
+
+const URL_REGEX = /(https?:\/\/[^\s<]+[^\s<.,;:!?)"'\]])/g;
 
 /* -------------------------------------------------------------------------- */
 /* Helpers                                                                    */
@@ -182,9 +186,32 @@ function isNearBottom(element: HTMLElement, threshold = 120) {
   );
 }
 
-function isZentroAI(conversation: ConversationSummary | UserSearchResult | null): boolean {
+function isZentroAI(
+  conversation: ConversationSummary | UserSearchResult | null
+): boolean {
   if (!conversation) return false;
-  return ("username" in conversation && conversation.username === ZENTRO_AI_USERNAME);
+  return (
+    "username" in conversation &&
+    conversation.username === ZENTRO_AI_USERNAME
+  );
+}
+
+function renderMessageText(text: string): ReactNode[] {
+  return text.split(URL_REGEX).map((part, index) =>
+    index % 2 === 1 ? (
+      <a
+        key={`${part}-${index}`}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline underline-offset-2 hover:opacity-80"
+      >
+        {part}
+      </a>
+    ) : (
+      part
+    )
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -195,13 +222,11 @@ function Avatar({
   src,
   name,
   size = "md",
-  online = false,
   isAI = false,
 }: {
   src?: string;
   name?: string;
   size?: "sm" | "md" | "lg";
-  online?: boolean;
   isAI?: boolean;
 }) {
   const sizeClass = {
@@ -214,7 +239,7 @@ function Avatar({
     <div className="relative shrink-0">
       {isAI ? (
         <div
-          className={`${sizeClass} flex items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 ring-2 ring-background shadow-lg shadow-violet-500/20`}
+          className={`${sizeClass} flex items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20 ring-2 ring-background`}
         >
           <Sparkles className="h-[45%] w-[45%] text-white" />
         </div>
@@ -232,13 +257,6 @@ function Avatar({
         </div>
       )}
 
-      {online && !isAI && (
-        <span
-          className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background bg-emerald-500"
-          aria-label="Online"
-        />
-      )}
-
       {isAI && (
         <span
           className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-violet-500"
@@ -248,6 +266,19 @@ function Avatar({
         </span>
       )}
     </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* AI Badge                                                                   */
+/* -------------------------------------------------------------------------- */
+
+function AIBadge() {
+  return (
+    <span className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-violet-500">
+      <Bot className="h-2.5 w-2.5" />
+      AI
+    </span>
   );
 }
 
@@ -293,10 +324,14 @@ function ConversationList({
     });
   }, [conversations, search]);
 
-  // Separate AI conversations from regular ones, pin AI at top
+  // Pin the AI conversation to the top
   const sortedConversations = useMemo(() => {
-    const ai = filteredConversations.filter(c => c.username === ZENTRO_AI_USERNAME);
-    const rest = filteredConversations.filter(c => c.username !== ZENTRO_AI_USERNAME);
+    const ai = filteredConversations.filter(
+      (c) => c.username === ZENTRO_AI_USERNAME
+    );
+    const rest = filteredConversations.filter(
+      (c) => c.username !== ZENTRO_AI_USERNAME
+    );
     return [...ai, ...rest];
   }, [filteredConversations]);
 
@@ -362,7 +397,8 @@ function ConversationList({
           activeId === conversation.partnerId;
 
         const unread = conversation.unreadCount > 0;
-        const isAI = conversation.username === ZENTRO_AI_USERNAME;
+        const isAI =
+          conversation.username === ZENTRO_AI_USERNAME;
 
         return (
           <button
@@ -371,7 +407,8 @@ function ConversationList({
             onClick={() =>
               onSelect(conversation.partnerId)
             }
-            className={`group mb-0.5 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all duration-200 ${
+            aria-current={isActive ? "true" : undefined}
+            className={`group mb-0.5 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
               isActive
                 ? isAI
                   ? "bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 ring-1 ring-violet-500/20"
@@ -388,7 +425,7 @@ function ConversationList({
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 min-w-0">
+                <div className="flex min-w-0 items-center gap-1.5">
                   <span
                     className={`truncate text-sm ${
                       unread
@@ -399,12 +436,7 @@ function ConversationList({
                     {conversation.fullname}
                   </span>
 
-                  {isAI && (
-                    <span className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-violet-500">
-                      <Bot className="h-2.5 w-2.5" />
-                      AI
-                    </span>
-                  )}
+                  {isAI && <AIBadge />}
                 </div>
 
                 <span
@@ -432,7 +464,10 @@ function ConversationList({
                 </span>
 
                 {unread && (
-                  <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground shadow-sm shadow-primary/30">
+                  <span
+                    className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground shadow-sm shadow-primary/30"
+                    aria-label={`${conversation.unreadCount} unread`}
+                  >
                     {conversation.unreadCount > 99
                       ? "99+"
                       : conversation.unreadCount}
@@ -548,6 +583,7 @@ function NewMessagePicker({
               }
             }}
             placeholder="Search people..."
+            aria-label="Search people"
             className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
             autoComplete="off"
           />
@@ -573,13 +609,13 @@ function NewMessagePicker({
                 key={item}
                 className="flex items-center gap-3 rounded-xl p-3"
               >
-              <div className="h-11 w-11 animate-pulse rounded-full bg-muted" />
+                <div className="h-11 w-11 animate-pulse rounded-full bg-muted" />
 
-              <div className="min-w-0 flex-1 space-y-2">
-                <div className="h-3 w-32 animate-pulse rounded bg-muted" />
-                <div className="h-2.5 w-20 animate-pulse rounded bg-muted" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="h-3 w-32 animate-pulse rounded bg-muted" />
+                  <div className="h-2.5 w-20 animate-pulse rounded bg-muted" />
+                </div>
               </div>
-            </div>
             ))}
           </div>
         )}
@@ -622,7 +658,7 @@ function NewMessagePicker({
               key={user._id}
               type="button"
               onClick={() => onPick(user)}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-muted"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Avatar
                 src={user.avatar}
@@ -638,10 +674,7 @@ function NewMessagePicker({
                   </p>
 
                   {user.username === ZENTRO_AI_USERNAME && (
-                    <span className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-violet-500">
-                      <Bot className="h-2.5 w-2.5" />
-                      AI
-                    </span>
+                    <AIBadge />
                   )}
                 </div>
 
@@ -673,8 +706,11 @@ function MessageBubble({
   grouped,
   isAIChat,
   replyTo,
+  replyLabel,
+  copied,
   onReply,
   onCopy,
+  onJumpToReply,
 }: {
   message: Message;
   isMine: boolean;
@@ -682,11 +718,22 @@ function MessageBubble({
   grouped: boolean;
   isAIChat?: boolean;
   replyTo?: Message;
+  replyLabel?: string;
+  copied?: boolean;
   onReply: (message: Message) => void;
-  onCopy: (text: string) => void;
+  onCopy: (message: Message) => void;
+  onJumpToReply: (messageId: string) => void;
 }) {
   const [showActions, setShowActions] = useState(false);
   const isAIMessage = !isMine && isAIChat;
+
+  const bubbleShape = isMine
+    ? grouped
+      ? "rounded-2xl rounded-r-md"
+      : "rounded-2xl rounded-br-lg"
+    : grouped
+      ? "rounded-2xl rounded-l-md"
+      : "rounded-2xl rounded-bl-lg";
 
   return (
     <>
@@ -701,72 +748,98 @@ function MessageBubble({
       )}
 
       <div
-        className={`group/msg relative flex ${
+        id={`message-${message._id}`}
+        className={`flex ${
           isMine ? "justify-end" : "justify-start"
         } ${grouped ? "mt-0.5" : "mt-3"}`}
-        onMouseEnter={() => setShowActions(true)}
-        onMouseLeave={() => setShowActions(false)}
+        onPointerEnter={(event) => {
+          if (event.pointerType === "mouse") {
+            setShowActions(true);
+          }
+        }}
+        onPointerLeave={(event) => {
+          if (event.pointerType === "mouse") {
+            setShowActions(false);
+          }
+        }}
+        onPointerDown={(event) => {
+          if (event.pointerType === "touch") {
+            setShowActions((current) => !current);
+          }
+        }}
       >
-        {/* Quick actions (visible on hover) */}
-        {showActions && (
-          <div className={`absolute top-0 z-10 flex items-center gap-0.5 ${
-            isMine ? "right-full mr-1" : "left-full ml-1"
-          }`}>
-            <button
-              type="button"
-              onClick={() => onReply(message)}
-              className="rounded-lg p-1.5 text-muted-foreground transition-all hover:bg-muted hover:text-foreground hover:scale-110"
-              title="Reply"
-            >
-              <Reply className="h-3.5 w-3.5" />
-            </button>
-            {message.content && (
-              <button
-                type="button"
-                onClick={() => onCopy(message.content)}
-                className="rounded-lg p-1.5 text-muted-foreground transition-all hover:bg-muted hover:text-foreground hover:scale-110"
-                title="Copy"
-              >
-                <Copy className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-        )}
-
         <div
-          className={`flex max-w-[85%] flex-col sm:max-w-[70%] ${
+          className={`relative flex max-w-[85%] flex-col sm:max-w-[70%] ${
             isMine ? "items-end" : "items-start"
           }`}
         >
+          {/* Quick actions: hover, tap, or keyboard focus */}
+          <div
+            className={`absolute -top-4 z-10 flex items-center gap-0.5 rounded-lg border border-border bg-card p-0.5 shadow-sm transition-opacity focus-within:pointer-events-auto focus-within:opacity-100 ${
+              isMine ? "right-2" : "left-2"
+            } ${
+              showActions
+                ? "opacity-100"
+                : "pointer-events-none opacity-0"
+            }`}
+          >
+            <button
+              type="button"
+              onClick={() => onReply(message)}
+              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              title="Reply"
+              aria-label="Reply to message"
+            >
+              <Reply className="h-3.5 w-3.5" />
+            </button>
+
+            {message.content && (
+              <button
+                type="button"
+                onClick={() => onCopy(message)}
+                className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                title={copied ? "Copied" : "Copy"}
+                aria-label={
+                  copied ? "Message copied" : "Copy message"
+                }
+              >
+                {copied ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-500" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+              </button>
+            )}
+          </div>
+
           {/* Reply preview */}
           {replyTo && (
-            <div className={`mb-1 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] ${
-              isMine ? "bg-primary/5 text-primary/70" : "bg-muted text-muted-foreground"
-            }`}>
-              <Reply className="h-3 w-3 shrink-0" />
-              <span className="truncate max-w-[200px]">{replyTo.content}</span>
-            </div>
+            <button
+              type="button"
+              onClick={() => onJumpToReply(replyTo._id)}
+              className={`mb-1 flex max-w-full flex-col rounded-lg border-l-2 px-3 py-1.5 text-left text-[11px] transition-colors ${
+                isMine
+                  ? "border-primary/40 bg-primary/5 text-primary/70 hover:bg-primary/10"
+                  : "border-border bg-muted text-muted-foreground hover:bg-muted/70"
+              }`}
+              aria-label="Jump to the original message"
+            >
+              <span className="font-semibold">
+                {replyLabel || "Message"}
+              </span>
+              <span className="max-w-[220px] truncate">
+                {replyTo.content || "Attachment"}
+              </span>
+            </button>
           )}
 
           <div
-            className={`relative overflow-hidden px-4 py-2.5 text-sm leading-relaxed transition-shadow ${
+            className={`relative overflow-hidden px-4 py-2.5 text-sm leading-relaxed transition-shadow ${bubbleShape} ${
               isMine
-                ? `bg-primary text-primary-foreground shadow-sm shadow-primary/20 ${
-                    grouped
-                      ? "rounded-2xl rounded-br-lg"
-                      : "rounded-2xl rounded-br-lg"
-                  }`
+                ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
                 : isAIMessage
-                  ? `border border-violet-500/20 bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5 text-foreground shadow-sm ${
-                      grouped
-                        ? "rounded-2xl rounded-bl-lg"
-                        : "rounded-2xl rounded-bl-lg"
-                    }`
-                  : `border border-border bg-card text-foreground shadow-sm ${
-                      grouped
-                        ? "rounded-2xl rounded-bl-lg"
-                        : "rounded-2xl rounded-bl-lg"
-                    }`
+                  ? "border border-violet-500/20 bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5 text-foreground shadow-sm"
+                  : "border border-border bg-card text-foreground shadow-sm"
             }`}
           >
             {message.mediaUrl && (
@@ -795,7 +868,7 @@ function MessageBubble({
 
             {message.content && (
               <p className="whitespace-pre-wrap break-words leading-[1.6]">
-                {message.content}
+                {renderMessageText(message.content)}
               </p>
             )}
           </div>
@@ -837,16 +910,26 @@ function MessageBubble({
 /* Typing Indicator                                                           */
 /* -------------------------------------------------------------------------- */
 
-function TypingIndicator({ name, isAI }: { name: string; isAI: boolean }) {
+function TypingIndicator({
+  name,
+  isAI,
+}: {
+  name: string;
+  isAI: boolean;
+}) {
   return (
     <div className="flex items-end gap-2 pt-2">
-      <div className={`rounded-2xl rounded-bl-lg px-4 py-3 ${
-        isAI 
-          ? "border border-violet-500/20 bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5" 
-          : "border border-border bg-card"
-      }`}>
+      <div
+        className={`rounded-2xl rounded-bl-lg px-4 py-3 ${
+          isAI
+            ? "border border-violet-500/20 bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5"
+            : "border border-border bg-card"
+        }`}
+      >
         <div className="flex items-center gap-1.5">
-          {isAI && <Sparkles className="h-3 w-3 text-violet-500 animate-pulse" />}
+          {isAI && (
+            <Sparkles className="h-3 w-3 animate-pulse text-violet-500" />
+          )}
           <div
             className="flex items-center gap-1"
             aria-label={`${name} is typing`}
@@ -854,15 +937,11 @@ function TypingIndicator({ name, isAI }: { name: string; isAI: boolean }) {
             <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60" />
             <span
               className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60"
-              style={{
-                animationDelay: "150ms",
-              }}
+              style={{ animationDelay: "150ms" }}
             />
             <span
               className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60"
-              style={{
-                animationDelay: "300ms",
-              }}
+              style={{ animationDelay: "300ms" }}
             />
           </div>
         </div>
@@ -921,8 +1000,20 @@ export function MessagesPage() {
   const [showScrollButton, setShowScrollButton] =
     useState(false);
 
-  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [newMessageCount, setNewMessageCount] =
+    useState(0);
+
+  const [replyingTo, setReplyingTo] =
+    useState<Message | null>(null);
+
+  // Local-only reply previews (message id -> quoted message)
+  const [replyPreviews, setReplyPreviews] = useState<
+    Record<string, Message>
+  >({});
+
+  const [copiedId, setCopiedId] = useState<string | null>(
+    null
+  );
 
   const messagesContainerRef =
     useRef<HTMLDivElement>(null);
@@ -936,9 +1027,25 @@ export function MessagesPage() {
   const typingTimeoutRef =
     useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const copyTimeoutRef =
+    useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const shouldScrollRef = useRef(true);
+  const stickToBottomRef = useRef(true);
+  const initialScrollRef = useRef(true);
+  const draftsRef = useRef<Record<string, string>>({});
 
   const isActiveAI = isZentroAI(activePartner);
+
+  const totalUnread = useMemo(
+    () =>
+      conversations.reduce(
+        (sum, conversation) =>
+          sum + conversation.unreadCount,
+        0
+      ),
+    [conversations]
+  );
 
   /* ---------------------------------------------------------------------- */
   /* Inbox                                                                   */
@@ -994,6 +1101,8 @@ export function MessagesPage() {
       setConversationError("");
       setContent("");
       setReplyingTo(null);
+      setNewMessageCount(0);
+      setShowScrollButton(false);
       return;
     }
 
@@ -1002,9 +1111,13 @@ export function MessagesPage() {
     setLoadingConversation(true);
     setConversationError("");
     setTyping(false);
-    setContent("");
+    setContent(draftsRef.current[recipientId] ?? "");
     setReplyingTo(null);
+    setNewMessageCount(0);
+    setShowScrollButton(false);
     shouldScrollRef.current = true;
+    stickToBottomRef.current = true;
+    initialScrollRef.current = true;
 
     messageService
       .getConversation(recipientId)
@@ -1062,7 +1175,16 @@ export function MessagesPage() {
         return [...current, next];
       });
 
-      shouldScrollRef.current = true;
+      if (
+        senderId === recipientId &&
+        !stickToBottomRef.current
+      ) {
+        // The reader scrolled up: don't yank them down.
+        setNewMessageCount((count) => count + 1);
+        setShowScrollButton(true);
+      } else {
+        shouldScrollRef.current = true;
+      }
 
       void loadInbox();
 
@@ -1089,49 +1211,31 @@ export function MessagesPage() {
       setTyping(false);
     };
 
-    socketService.on(
-      "message:new",
-      handleMessage
-    );
-
-    socketService.on(
-      "typing:start",
-      handleTyping
-    );
-
-    socketService.on(
-      "typing:stop",
-      handleTypingStop
-    );
+    socketService.on("message:new", handleMessage);
+    socketService.on("typing:start", handleTyping);
+    socketService.on("typing:stop", handleTypingStop);
 
     return () => {
       cancelled = true;
 
-      socketService.off(
-        "message:new",
-        handleMessage
-      );
-
-      socketService.off(
-        "typing:start",
-        handleTyping
-      );
-
-      socketService.off(
-        "typing:stop",
-        handleTypingStop
-      );
+      socketService.off("message:new", handleMessage);
+      socketService.off("typing:start", handleTyping);
+      socketService.off("typing:stop", handleTypingStop);
     };
   }, [recipientId, loadInbox]);
 
   /* ---------------------------------------------------------------------- */
-  /* Typing cleanup                                                          */
+  /* Timer cleanup                                                           */
   /* ---------------------------------------------------------------------- */
 
   useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
+      }
+
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
       }
     };
   }, []);
@@ -1141,16 +1245,32 @@ export function MessagesPage() {
   /* ---------------------------------------------------------------------- */
 
   useEffect(() => {
-    if (!shouldScrollRef.current) {
+    const wantsScroll =
+      shouldScrollRef.current ||
+      (typing && stickToBottomRef.current);
+
+    if (!wantsScroll) {
+      return;
+    }
+
+    // Keep the flag until there is something on screen to scroll to.
+    if (messages.length === 0 && !typing) {
       return;
     }
 
     messagesEndRef.current?.scrollIntoView({
-      behavior: messages.length > 1 ? "smooth" : "auto",
+      behavior: initialScrollRef.current
+        ? "auto"
+        : "smooth",
     });
+
+    if (messages.length > 0) {
+      initialScrollRef.current = false;
+    }
 
     shouldScrollRef.current = false;
     setShowScrollButton(false);
+    setNewMessageCount(0);
   }, [messages, typing]);
 
   /* ---------------------------------------------------------------------- */
@@ -1161,7 +1281,10 @@ export function MessagesPage() {
     const textarea = textareaRef.current;
     if (!textarea) return;
     textarea.style.height = "auto";
-    textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
+    textarea.style.height = `${Math.min(
+      textarea.scrollHeight,
+      160
+    )}px`;
   }, [content]);
 
   /* ---------------------------------------------------------------------- */
@@ -1178,10 +1301,14 @@ export function MessagesPage() {
 
     const nearBottom = isNearBottom(container);
 
-    setShowScrollButton(!nearBottom);
+    stickToBottomRef.current = nearBottom;
 
     if (nearBottom) {
       shouldScrollRef.current = false;
+      setShowScrollButton(false);
+      setNewMessageCount(0);
+    } else {
+      setShowScrollButton(true);
     }
   };
 
@@ -1190,8 +1317,19 @@ export function MessagesPage() {
       behavior: "smooth",
     });
 
-    setShowScrollButton(false);
+    stickToBottomRef.current = true;
     shouldScrollRef.current = false;
+    setShowScrollButton(false);
+    setNewMessageCount(0);
+  };
+
+  const jumpToMessage = (messageId: string) => {
+    document
+      .getElementById(`message-${messageId}`)
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
   };
 
   /* ---------------------------------------------------------------------- */
@@ -1217,7 +1355,6 @@ export function MessagesPage() {
     setShowPicker(false);
     setMessages([]);
     setConversationError("");
-    setContent("");
     setReplyingTo(null);
 
     window.setTimeout(() => {
@@ -1232,10 +1369,7 @@ export function MessagesPage() {
     }
 
     if (recipientId) {
-      socketService.emit(
-        "typing:stop",
-        recipientId
-      );
+      socketService.emit("typing:stop", recipientId);
     }
 
     setSearchParams({});
@@ -1251,9 +1385,7 @@ export function MessagesPage() {
   /* Typing                                                                  */
   /* ---------------------------------------------------------------------- */
 
-  const handleContentChange = (
-    value: string
-  ) => {
+  const handleContentChange = (value: string) => {
     setContent(value);
     setSendError("");
 
@@ -1261,20 +1393,16 @@ export function MessagesPage() {
       return;
     }
 
-    socketService.emit(
-      "typing:start",
-      recipientId
-    );
+    draftsRef.current[recipientId] = value;
+
+    socketService.emit("typing:start", recipientId);
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
     typingTimeoutRef.current = setTimeout(() => {
-      socketService.emit(
-        "typing:stop",
-        recipientId
-      );
+      socketService.emit("typing:stop", recipientId);
 
       typingTimeoutRef.current = null;
     }, 1200);
@@ -1290,10 +1418,7 @@ export function MessagesPage() {
       typingTimeoutRef.current = null;
     }
 
-    socketService.emit(
-      "typing:stop",
-      recipientId
-    );
+    socketService.emit("typing:stop", recipientId);
   };
 
   /* ---------------------------------------------------------------------- */
@@ -1305,11 +1430,26 @@ export function MessagesPage() {
     textareaRef.current?.focus();
   };
 
-  const handleCopy = async (text: string) => {
+  const handleCopy = async (message: Message) => {
+    if (!message.content) {
+      return;
+    }
+
     try {
-      await navigator.clipboard.writeText(text);
-      setCopiedId(text);
-      setTimeout(() => setCopiedId(null), 2000);
+      await navigator.clipboard.writeText(
+        message.content
+      );
+
+      setCopiedId(message._id);
+
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+
+      copyTimeoutRef.current = setTimeout(() => {
+        setCopiedId(null);
+        copyTimeoutRef.current = null;
+      }, 2000);
     } catch {
       // Clipboard API not available
     }
@@ -1319,9 +1459,7 @@ export function MessagesPage() {
   /* Send                                                                    */
   /* ---------------------------------------------------------------------- */
 
-  const submit = async (
-    event?: FormEvent
-  ) => {
+  const submit = async (event?: FormEvent) => {
     event?.preventDefault();
 
     const value = content.trim();
@@ -1329,6 +1467,8 @@ export function MessagesPage() {
     if (!recipientId || !value || sending) {
       return;
     }
+
+    const quoted = replyingTo;
 
     try {
       setSending(true);
@@ -1353,9 +1493,19 @@ export function MessagesPage() {
         return [...current, message];
       });
 
+      if (quoted) {
+        setReplyPreviews((current) => ({
+          ...current,
+          [message._id]: quoted,
+        }));
+      }
+
+      delete draftsRef.current[recipientId];
+
       setContent("");
       setReplyingTo(null);
       shouldScrollRef.current = true;
+      stickToBottomRef.current = true;
 
       void loadInbox();
     } catch {
@@ -1374,7 +1524,17 @@ export function MessagesPage() {
   const handleInputKeyDown = (
     event: KeyboardEvent<HTMLTextAreaElement>
   ) => {
+    if (event.key === "Escape" && replyingTo) {
+      setReplyingTo(null);
+      return;
+    }
+
     if (event.key !== "Enter") {
+      return;
+    }
+
+    // Don't send while an IME composition is in progress
+    if (event.nativeEvent.isComposing) {
       return;
     }
 
@@ -1408,16 +1568,14 @@ export function MessagesPage() {
   /* ---------------------------------------------------------------------- */
 
   return (
-    <main className="mx-auto flex h-[calc(100vh-4rem)] w-full max-w-7xl overflow-hidden border border-border bg-background shadow-sm md:my-4 md:h-[calc(100vh-6rem)] md:rounded-2xl">
+    <main className="mx-auto flex h-[calc(100dvh-4rem)] w-full max-w-7xl overflow-hidden border border-border bg-background shadow-sm md:my-4 md:h-[calc(100dvh-6rem)] md:rounded-2xl">
       {/* ------------------------------------------------------------------ */}
       {/* Sidebar                                                            */}
       {/* ------------------------------------------------------------------ */}
 
       <aside
         className={`relative flex w-full flex-col border-r border-border bg-card md:w-[350px] md:shrink-0 ${
-          recipientId
-            ? "hidden md:flex"
-            : "flex"
+          recipientId ? "hidden md:flex" : "flex"
         }`}
       >
         <div className="border-b border-border px-4 pb-3 pt-4">
@@ -1433,17 +1591,18 @@ export function MessagesPage() {
                 </h1>
 
                 <p className="text-[11px] text-muted-foreground">
-                  {conversations.length} conversation{conversations.length !== 1 ? "s" : ""}
+                  {conversations.length} conversation
+                  {conversations.length !== 1 ? "s" : ""}
+                  {totalUnread > 0 &&
+                    ` · ${totalUnread} unread`}
                 </p>
               </div>
             </div>
 
             <button
               type="button"
-              onClick={() =>
-                setShowPicker(true)
-              }
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-md hover:shadow-primary/30 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+              onClick={() => setShowPicker(true)}
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-md hover:shadow-primary/30 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background active:scale-95"
               aria-label="New message"
             >
               <SquarePen className="h-4 w-4" />
@@ -1491,9 +1650,7 @@ export function MessagesPage() {
         {showPicker && (
           <NewMessagePicker
             onPick={startNewConversation}
-            onClose={() =>
-              setShowPicker(false)
-            }
+            onClose={() => setShowPicker(false)}
           />
         )}
       </aside>
@@ -1504,9 +1661,7 @@ export function MessagesPage() {
 
       <section
         className={`flex min-w-0 flex-1 flex-col bg-background ${
-          recipientId
-            ? "flex"
-            : "hidden md:flex"
+          recipientId ? "flex" : "hidden md:flex"
         }`}
       >
         {!recipientId ? (
@@ -1526,10 +1681,8 @@ export function MessagesPage() {
 
             <button
               type="button"
-              onClick={() =>
-                setShowPicker(true)
-              }
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-md active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+              onClick={() => setShowPicker(true)}
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background active:scale-[0.98]"
             >
               <SquarePen className="h-4 w-4" />
               New message
@@ -1541,11 +1694,13 @@ export function MessagesPage() {
             {/* Header                                                         */}
             {/* ------------------------------------------------------------ */}
 
-            <header className={`flex min-h-[68px] items-center gap-3 border-b px-3 py-3 sm:px-5 ${
-              isActiveAI 
-                ? "border-violet-500/10 bg-gradient-to-r from-violet-500/5 to-fuchsia-500/5" 
-                : "border-border bg-card"
-            }`}>
+            <header
+              className={`flex min-h-[68px] items-center gap-3 border-b px-3 py-3 sm:px-5 ${
+                isActiveAI
+                  ? "border-violet-500/10 bg-gradient-to-r from-violet-500/5 to-fuchsia-500/5"
+                  : "border-border bg-card"
+              }`}
+            >
               <button
                 type="button"
                 onClick={closeConversation}
@@ -1559,27 +1714,26 @@ export function MessagesPage() {
                 src={partnerAvatar}
                 name={partnerName}
                 size="md"
-                online={!isActiveAI}
                 isAI={isActiveAI}
               />
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <p className="truncate text-sm font-bold text-foreground">
-                    {partnerName ||
-                      "Conversation"}
+                    {partnerName || "Conversation"}
                   </p>
 
-                  {isActiveAI && (
-                    <span className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-violet-500">
-                      <Bot className="h-2.5 w-2.5" />
-                      AI
-                    </span>
-                  )}
+                  {isActiveAI && <AIBadge />}
                 </div>
 
                 {typing ? (
-                  <p className={`text-xs font-medium ${isActiveAI ? "text-violet-500" : "text-primary"}`}>
+                  <p
+                    className={`text-xs font-medium ${
+                      isActiveAI
+                        ? "text-violet-500"
+                        : "text-primary"
+                    }`}
+                  >
                     {isActiveAI ? "Thinking…" : "Typing…"}
                   </p>
                 ) : isActiveAI ? (
@@ -1590,20 +1744,8 @@ export function MessagesPage() {
                   <p className="truncate text-xs text-muted-foreground">
                     @{partnerUsername}
                   </p>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    Active now
-                  </p>
-                )}
+                ) : null}
               </div>
-
-              <button
-                type="button"
-                className="rounded-xl p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                aria-label="Conversation options"
-              >
-                <MoreVertical className="h-5 w-5" />
-              </button>
             </header>
 
             {/* ------------------------------------------------------------ */}
@@ -1613,8 +1755,13 @@ export function MessagesPage() {
             <div
               ref={messagesContainerRef}
               onScroll={handleMessagesScroll}
+              role="log"
+              aria-live="polite"
+              aria-label="Conversation messages"
               className={`relative flex-1 overflow-y-auto ${
-                isActiveAI ? "bg-gradient-to-b from-violet-500/[0.02] to-transparent" : ""
+                isActiveAI
+                  ? "bg-gradient-to-b from-violet-500/[0.02] to-transparent"
+                  : ""
               }`}
             >
               <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-4 py-5 sm:px-6">
@@ -1656,88 +1803,109 @@ export function MessagesPage() {
                       src={partnerAvatar}
                       name={partnerName}
                       size="lg"
-                      online={!isActiveAI}
                       isAI={isActiveAI}
                     />
 
                     <h3 className="mt-4 text-sm font-bold text-foreground">
-                      {isActiveAI ? "Chat with Zentro AI" : "Start a conversation"}
+                      {isActiveAI
+                        ? "Chat with Zentro AI"
+                        : "Start a conversation"}
                     </h3>
 
                     <p className="mt-1.5 max-w-xs text-xs leading-5 text-muted-foreground">
-                      {isActiveAI 
+                      {isActiveAI
                         ? "Ask questions, get recommendations, or just chat. I'm here to help!"
-                        : `Send a message to ${partnerName || "this person"}.`
-                      }
+                        : `Send a message to ${
+                            partnerName || "this person"
+                          }.`}
                     </p>
 
                     {isActiveAI && (
                       <div className="mt-4 flex flex-wrap justify-center gap-2">
-                        {["What's trending?", "Recommend a post", "Help me write"].map(suggestion => (
-                          <button
-                            key={suggestion}
-                            type="button"
-                            onClick={() => {
-                              setContent(suggestion);
-                              textareaRef.current?.focus();
-                            }}
-                            className="rounded-full border border-violet-500/20 bg-violet-500/5 px-3 py-1.5 text-xs font-medium text-violet-600 transition-all hover:bg-violet-500/10 hover:border-violet-500/30 active:scale-95 dark:text-violet-400"
-                          >
-                            {suggestion}
-                          </button>
-                        ))}
+                        {AI_SUGGESTIONS.map(
+                          (suggestion) => (
+                            <button
+                              key={suggestion}
+                              type="button"
+                              onClick={() => {
+                                handleContentChange(
+                                  suggestion
+                                );
+                                textareaRef.current?.focus();
+                              }}
+                              className="rounded-full border border-violet-500/20 bg-violet-500/5 px-3 py-1.5 text-xs font-medium text-violet-600 transition-all hover:border-violet-500/30 hover:bg-violet-500/10 active:scale-95 dark:text-violet-400"
+                            >
+                              {suggestion}
+                            </button>
+                          )
+                        )}
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className="mt-auto space-y-0.5">
-                    {messages.map(
-                      (message, index) => {
-                        const senderId =
-                          getMessageSenderId(
-                            message
-                          );
+                    {messages.map((message, index) => {
+                      const senderId =
+                        getMessageSenderId(message);
 
-                        const isMine =
-                          senderId ===
-                          currentUser?._id;
+                      const isMine =
+                        senderId === currentUser?._id;
 
-                        const previousMessage =
-                          messages[index - 1];
+                      const previousMessage =
+                        messages[index - 1];
 
-                        const showDate =
-                          !previousMessage ||
-                          !isSameDay(
-                            previousMessage.createdAt,
-                            message.createdAt
-                          );
-
-                        const grouped =
-                          Boolean(
-                            previousMessage &&
-                              getMessageSenderId(
-                                previousMessage
-                              ) === senderId &&
-                              !showDate
-                          );
-
-                        return (
-                          <MessageBubble
-                            key={message._id}
-                            message={message}
-                            isMine={isMine}
-                            showDate={showDate}
-                            grouped={grouped}
-                            isAIChat={isActiveAI}
-                            onReply={handleReply}
-                            onCopy={handleCopy}
-                          />
+                      const showDate =
+                        !previousMessage ||
+                        !isSameDay(
+                          previousMessage.createdAt,
+                          message.createdAt
                         );
-                      }
-                    )}
+
+                      const grouped = Boolean(
+                        previousMessage &&
+                          getMessageSenderId(
+                            previousMessage
+                          ) === senderId &&
+                          !showDate
+                      );
+
+                      const quoted =
+                        replyPreviews[message._id];
+
+                      const replyLabel = quoted
+                        ? getMessageSenderId(quoted) ===
+                          currentUser?._id
+                          ? "You"
+                          : partnerName || "Them"
+                        : undefined;
+
+                      return (
+                        <MessageBubble
+                          key={message._id}
+                          message={message}
+                          isMine={isMine}
+                          showDate={showDate}
+                          grouped={grouped}
+                          isAIChat={isActiveAI}
+                          replyTo={quoted}
+                          replyLabel={replyLabel}
+                          copied={
+                            copiedId === message._id
+                          }
+                          onReply={handleReply}
+                          onCopy={(target) =>
+                            void handleCopy(target)
+                          }
+                          onJumpToReply={jumpToMessage}
+                        />
+                      );
+                    })}
 
                     {typing && (
-                      <TypingIndicator name={partnerName} isAI={isActiveAI} />
+                      <TypingIndicator
+                        name={partnerName}
+                        isAI={isActiveAI}
+                      />
                     )}
 
                     <div
@@ -1752,10 +1920,14 @@ export function MessagesPage() {
                 <button
                   type="button"
                   onClick={scrollToBottom}
-                  className="absolute bottom-4 right-4 flex items-center gap-1.5 rounded-full border border-border bg-card/95 px-3 py-2 text-xs font-medium text-foreground shadow-lg backdrop-blur-sm transition-all hover:bg-muted active:scale-95"
+                  className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-card/95 px-3 py-2 text-xs font-medium text-foreground shadow-lg backdrop-blur-sm transition-all hover:bg-muted active:scale-95"
                 >
                   <ChevronDown className="h-3.5 w-3.5" />
-                  New messages
+                  {newMessageCount > 0
+                    ? `${newMessageCount} new message${
+                        newMessageCount !== 1 ? "s" : ""
+                      }`
+                    : "Jump to latest"}
                 </button>
               )}
             </div>
@@ -1764,11 +1936,18 @@ export function MessagesPage() {
             {/* Composer                                                       */}
             {/* ------------------------------------------------------------ */}
 
-            <div className={`border-t px-3 py-3 sm:px-5 ${
-              isActiveAI ? "border-violet-500/10 bg-gradient-to-r from-violet-500/[0.02] to-fuchsia-500/[0.02]" : "border-border bg-card"
-            }`}>
+            <div
+              className={`border-t px-3 py-3 sm:px-5 ${
+                isActiveAI
+                  ? "border-violet-500/10 bg-gradient-to-r from-violet-500/[0.02] to-fuchsia-500/[0.02]"
+                  : "border-border bg-card"
+              }`}
+            >
               {sendError && (
-                <div className="mx-auto mb-2 max-w-4xl rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                <div
+                  role="alert"
+                  className="mx-auto mb-2 max-w-4xl rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive"
+                >
                   {sendError}
                 </div>
               )}
@@ -1777,13 +1956,23 @@ export function MessagesPage() {
               {replyingTo && (
                 <div className="mx-auto mb-2 flex max-w-4xl items-center gap-2 rounded-xl border border-primary/10 bg-primary/5 px-3 py-2">
                   <Reply className="h-4 w-4 shrink-0 text-primary" />
-                  <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-                    Replying to: {replyingTo.content}
-                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-semibold text-primary">
+                      Replying to{" "}
+                      {getMessageSenderId(replyingTo) ===
+                      currentUser?._id
+                        ? "yourself"
+                        : partnerName || "this message"}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {replyingTo.content || "Attachment"}
+                    </p>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setReplyingTo(null)}
                     className="shrink-0 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    aria-label="Cancel reply"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -1791,36 +1980,16 @@ export function MessagesPage() {
               )}
 
               <form
-                onSubmit={(event) =>
-                  void submit(event)
-                }
+                onSubmit={(event) => void submit(event)}
                 className="mx-auto flex max-w-4xl items-end gap-2"
               >
-                <div className={`flex min-w-0 flex-1 items-end rounded-2xl border px-2 py-1.5 transition-all focus-within:ring-2 ${
-                  isActiveAI 
-                    ? "border-violet-500/20 bg-violet-500/[0.03] focus-within:border-violet-500/40 focus-within:ring-violet-500/10" 
-                    : "border-input bg-muted/30 focus-within:border-primary/40 focus-within:ring-primary/10"
-                }`}>
-                  <button
-                    type="button"
-                    disabled
-                    className="mb-0.5 hidden cursor-not-allowed rounded-xl p-2 text-muted-foreground opacity-50 sm:flex"
-                    aria-label="Attach file"
-                    title="File attachments coming soon"
-                  >
-                    <Paperclip className="h-4 w-4" />
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled
-                    className="mb-0.5 hidden cursor-not-allowed rounded-xl p-2 text-muted-foreground opacity-50 sm:flex"
-                    aria-label="Add image"
-                    title="Image attachments coming soon"
-                  >
-                    <ImageIcon className="h-4 w-4" />
-                  </button>
-
+                <div
+                  className={`flex min-w-0 flex-1 items-end rounded-2xl border px-2 py-1.5 transition-all focus-within:ring-2 ${
+                    isActiveAI
+                      ? "border-violet-500/20 bg-violet-500/[0.03] focus-within:border-violet-500/40 focus-within:ring-violet-500/10"
+                      : "border-input bg-muted/30 focus-within:border-primary/40 focus-within:ring-primary/10"
+                  }`}
+                >
                   <textarea
                     ref={textareaRef}
                     value={content}
@@ -1829,14 +1998,9 @@ export function MessagesPage() {
                         event.target.value
                       )
                     }
-                    onKeyDown={
-                      handleInputKeyDown
-                    }
+                    onKeyDown={handleInputKeyDown}
                     onFocus={() => {
-                      if (
-                        recipientId &&
-                        content.trim()
-                      ) {
+                      if (recipientId && content.trim()) {
                         socketService.emit(
                           "typing:start",
                           recipientId
@@ -1847,42 +2011,30 @@ export function MessagesPage() {
                     placeholder={
                       isActiveAI
                         ? "Ask Zentro AI anything…"
-                        : `Message ${partnerName || "someone"}…`
+                        : `Message ${
+                            partnerName || "someone"
+                          }…`
                     }
-                    disabled={sending}
                     autoComplete="off"
+                    enterKeyHint="send"
                     rows={1}
-                    className="min-w-0 flex-1 resize-none bg-transparent px-2 py-2.5 text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                    className="min-w-0 flex-1 resize-none bg-transparent px-3 py-2.5 text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground"
                     style={{ maxHeight: "160px" }}
                     aria-label={`Message ${
-                      partnerName ||
-                      "someone"
+                      partnerName || "someone"
                     }`}
                   />
-
-                  <button
-                    type="button"
-                    disabled
-                    className="mb-0.5 rounded-xl p-2 text-muted-foreground opacity-50"
-                    aria-label="Add emoji"
-                    title="Emoji picker coming soon"
-                  >
-                    <Smile className="h-4 w-4" />
-                  </button>
                 </div>
 
                 <button
                   type="submit"
-                  disabled={
-                    !content.trim() ||
-                    sending
-                  }
+                  disabled={!content.trim() || sending}
                   aria-label={
                     sending
                       ? "Sending message"
                       : "Send message"
                   }
-                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none ${
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none ${
                     isActiveAI
                       ? "bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-violet-500/20 hover:shadow-md hover:shadow-violet-500/30"
                       : "bg-primary shadow-primary/20 hover:bg-primary/90 hover:shadow-md hover:shadow-primary/30"
@@ -1897,7 +2049,9 @@ export function MessagesPage() {
               </form>
 
               <p className="mx-auto mt-2 hidden max-w-4xl text-[10px] text-muted-foreground sm:block">
-                Press Enter to send · Shift + Enter for new line
+                {isActiveAI
+                  ? "Zentro AI can make mistakes. Check important info. · Enter to send · Shift + Enter for new line"
+                  : "Press Enter to send · Shift + Enter for new line"}
               </p>
             </div>
           </>
