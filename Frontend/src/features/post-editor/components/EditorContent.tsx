@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bold,
   Code2,
@@ -8,7 +8,9 @@ import {
   List,
   ListOrdered,
   Quote,
+  Sparkles,
 } from "lucide-react";
+import { axiosInstance } from "@/shared/lib/axios";
 
 interface EditorContentProps {
   value: string;
@@ -219,8 +221,41 @@ export default function EditorContent({ value, onChange }: EditorContentProps) {
     }
   };
 
+  /* ---------- AI Assistant Actions ---------- */
+  const [isAILoading, setIsAILoading] = useState(false);
+
+  const handleAIFix = async (endpoint: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = value.slice(start, end);
+
+    if (!selected) {
+        alert("Please select some text first.");
+        return;
+    }
+
+    setIsAILoading(true);
+    try {
+        const response = await axiosInstance.post(`/ai/writing/${endpoint}`, { content: selected });
+        const newText = response.data.data;
+        const newValue = value.slice(0, start) + newText + value.slice(end);
+        applyChange(newValue, start, start + newText.length);
+    } catch (e) {
+        console.error("AI fix failed");
+    } finally {
+        setIsAILoading(false);
+    }
+  };
+
   /* ---------- Toolbar ---------- */
   const toolbarGroups: ToolbarAction[][] = [
+    [
+      { label: "AI Grammar Fix", icon: Sparkles, action: () => handleAIFix("grammar-fix") },
+      { label: "AI Shorten", icon: Sparkles, action: () => handleAIFix("shorten") },
+    ],
     [
       { label: "Bold", shortcut: "Ctrl+B", icon: Bold, action: handleBold },
       { label: "Italic", shortcut: "Ctrl+I", icon: Italic, action: handleItalic },
@@ -285,15 +320,18 @@ export default function EditorContent({ value, onChange }: EditorContentProps) {
                 key={label}
                 type="button"
                 onClick={action}
+                disabled={isAILoading && label.includes("AI")}
                 title={shortcut ? `${label} (${shortcut})` : label}
                 aria-label={label}
-                className="
+                className={`
                   inline-flex h-9 w-9 items-center justify-center rounded-md
                   text-muted-foreground transition-colors
                   hover:bg-background hover:text-foreground
                   active:scale-95
                   focus:outline-none focus:ring-2 focus:ring-ring
-                "
+                  ${label.includes("AI") ? "text-primary hover:text-primary" : ""}
+                  ${isAILoading && label.includes("AI") ? "opacity-50 animate-pulse" : ""}
+                `}
               >
                 <Icon size={16} />
               </button>

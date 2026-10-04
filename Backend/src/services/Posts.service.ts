@@ -2,6 +2,7 @@ import PostModel from "../model/post.model.js";
 import type { ICreatePostBody, IPost, IPostUpdateBody } from "../types/Posts/posts.types.js";
 import { escapeRegex } from "../utils/escapeRegex.js";
 import { notifyMentionedUsersService } from "./notification.service.js";
+import { generateEmbedding } from "./ai-embedding.service.js";
 
 
 export const createPostService = async (userId: string, { title, content, tags, category, coverImage, mediaUrl, mediaType, isPublished }: ICreatePostBody) => {
@@ -22,6 +23,11 @@ export const createPostService = async (userId: string, { title, content, tags, 
 
 
         await notifyMentionedUsersService(`${title} ${content}`, userId, post._id.toString());
+        
+        generateEmbedding(`${title} ${content}`).then(async (embedding) => {
+            await PostModel.findByIdAndUpdate(post._id, { embedding });
+        }).catch(console.error);
+
         return post
 
     } catch (error) {
@@ -147,6 +153,12 @@ export const updatePostService = async (postId: string, userId: string, updatedD
 
         if (!UpdatePost) {
             throw new Error("Post not found")
+        }
+
+        if (updatedData.title || updatedData.content) {
+            generateEmbedding(`${UpdatePost.title} ${UpdatePost.content}`).then(async (embedding) => {
+                await PostModel.findByIdAndUpdate(postId, { embedding });
+            }).catch(console.error);
         }
 
         return UpdatePost

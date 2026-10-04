@@ -19,6 +19,7 @@ export interface IPost {
 
     createdAt?: Date,
     updatedAt?: Date,
+    embedding?: number[],
 }
 
 

@@ -4,6 +4,8 @@ import { updateUserInterestService } from "./interest.service.js";
 import { createNotificationService, notifyMentionedUsersService } from "./notification.service.js";
 import UserModel from "../model/auth.model.js";
 import { handleAICommentEngagement } from "./ai-engagement.service.js";
+import { handleAIFaqDraft } from "./ai-faq.service.js";
+import { handleAIMentionReply } from "./ai-mention.service.js";
 
 
 export const createCommentService = async (postId:string , userId:string , content:string)=>{
@@ -44,7 +46,12 @@ export const createCommentService = async (postId:string , userId:string , conte
        const author = await UserModel.findById(post.user);
        if (author && author.email === "ai.system@zentro.com" && userId !== author._id.toString()) {
            handleAICommentEngagement(postId, content, post.content).catch(console.error);
+       } else if (content.includes("@zentro")) {
+           handleAIMentionReply(postId, comment._id.toString(), content, post.user.toString()).catch(console.error);
+       } else if (author && userId !== author._id.toString()) {
+           handleAIFaqDraft(postId, comment._id.toString(), content, post.content, author._id.toString()).catch(console.error);
        }
+
 
         const updatedPost = await PostModel.findById(postId).select("commentsCount")
         
@@ -76,14 +83,14 @@ export const getCommentService = async (postId:string , page=1 , limit=10)=>{
         const skip = (page-1)*limit
         
       const [comments, totalComments] = await Promise.all([
-         CommentModel.find({ post: postId })
+         CommentModel.find({ post: postId, "aiMeta.status": { $ne: "pending_approval" } })
         .populate("user", "fullname username avatar")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
 
-    CommentModel.countDocuments({ post: postId })
+    CommentModel.countDocuments({ post: postId, "aiMeta.status": { $ne: "pending_approval" } })
 ]);
         
         return {

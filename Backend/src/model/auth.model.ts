@@ -91,6 +91,10 @@ const userSchema = new mongoose.Schema<UserDocument>({
     lastLogin: {
         type: Date,
         default: Date.now
+    },
+    aiPrefs: {
+        commentReplies: { type: String, enum: ["off", "on_mention", "faq_draft"], default: "off" },
+        suggestReplies: { type: Boolean, default: false }
     }
 },{
     timestamps:true

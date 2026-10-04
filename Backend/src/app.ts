@@ -15,6 +15,7 @@ import adminRouter from "./routes/admin.routes.js";
 import viewTimeRouter from "./routes/viewTime.route.js";
 import messageRouter from "./routes/message.routes.js";
 import readingRouter from "./routes/reading.routes.js";
+import AIRouter from "./routes/ai.route.js";
 import cors from "cors"
 import helmet from "helmet";
 import compression from "compression";
@@ -147,6 +148,7 @@ app.use("/api/admin", adminRouter)
 app.use("/api/view-time", viewTimeRouter)
 app.use("/api/messages", messageRouter)
 app.use("/api/reading", readingRouter);
+app.use("/api/ai", AIRouter);
 
 
 

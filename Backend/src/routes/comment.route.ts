@@ -4,6 +4,17 @@ import { commentController, deleteCommentController, getCommentController, getSi
 
 
 const CommentRouter = Router()
+import { getSuggestedReplies, approveSuggestedReply, rejectSuggestedReply } from "../controller/ai-faq.controller.js";
+
+// @route: GET /api/comment/post/:postId/suggested-replies
+CommentRouter.get("/post/:postId/suggested-replies", authMiddleware, getSuggestedReplies);
+
+// @route: POST /api/comment/:commentId/approve
+CommentRouter.post("/:commentId/approve", authMiddleware, approveSuggestedReply);
+
+// @route: POST /api/comment/:commentId/reject
+CommentRouter.post("/:commentId/reject", authMiddleware, rejectSuggestedReply);
+
 
 
 // @route: POST /api/comment/:postId

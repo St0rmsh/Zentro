@@ -21,6 +21,12 @@ const commentSchema = new mongoose.Schema<IComment>(
             type: mongoose.Schema.Types.ObjectId,
             ref: "Comment",
         },
+        isAI: { type: Boolean, default: false },
+        aiMeta: {
+            model: String,
+            groundedOnPostVersion: Date,
+            status: { type: String, enum: ["published", "pending_approval", "rejected"] },
+        },
     },
     { timestamps: true }
 )

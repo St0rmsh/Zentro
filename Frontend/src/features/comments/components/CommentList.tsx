@@ -12,7 +12,7 @@ import { CommentInput } from "./CommentInput";
 import { CommentListSkeleton } from "./CommentSkeleton";
 import { DeleteCommentDialog } from "./DeleteCommentDialog";
 import { Button } from "@/shared/ui/button";
-import { MessageSquare, Loader2, Zap } from "lucide-react";
+import { MessageSquare, Loader2, Zap, Sparkles } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { setPostCommentsCount } from "../../feed/state/feedSlice";
 import { setPostDetailCommentsCount } from "../../post/state/postSlice";
@@ -34,11 +34,33 @@ export const CommentList: React.FC<CommentListProps> = ({ postId }) => {
   const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
   const [vibe, setVibe] = useState<string | null>(null);
   const [vibeLoading, setVibeLoading] = useState(false);
+  
+  // AI Feature States
+  const [threadSummary, setThreadSummary] = useState<string | null>(null);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [suggestedReplies, setSuggestedReplies] = useState<any[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   useEffect(() => {
     // Fetch first page of comments when mounted
     dispatch(fetchCommentsThunk({ postId, page: 1, limit: 10 }));
     
+    // Fetch suggested replies (only returns if author)
+    const fetchSuggestedReplies = async () => {
+        setLoadingSuggestions(true);
+        try {
+            const res = await axiosInstance.get(`/comment/post/${postId}/suggested-replies`);
+            setSuggestedReplies(res.data.data || []);
+        } catch(e) {
+            console.error("Failed to fetch suggested replies", e);
+        } finally {
+            setLoadingSuggestions(false);
+        }
+    };
+    if (user) {
+        fetchSuggestedReplies();
+    }
+
     // Fetch vibe score
     const fetchVibe = async () => {
       setVibeLoading(true);
@@ -90,6 +112,38 @@ export const CommentList: React.FC<CommentListProps> = ({ postId }) => {
     }
   };
 
+  const handleSummarizeThread = async () => {
+    setIsSummarizing(true);
+    try {
+      const response = await axiosInstance.get(`/ai/thread/${postId}/summary`);
+      setThreadSummary(response.data.data);
+    } catch (e) {
+      console.error("Failed to summarize thread");
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+
+  const handleApproveSuggestion = async (commentId: string) => {
+      try {
+          await axiosInstance.post(`/comment/${commentId}/approve`);
+          setSuggestedReplies(prev => prev.filter(c => c._id !== commentId));
+          // Refresh comments to show the newly approved one
+          dispatch(fetchCommentsThunk({ postId, page: 1, limit: 10 }));
+      } catch (e) {
+          console.error("Approval failed", e);
+      }
+  };
+
+  const handleRejectSuggestion = async (commentId: string) => {
+      try {
+          await axiosInstance.post(`/comment/${commentId}/reject`);
+          setSuggestedReplies(prev => prev.filter(c => c._id !== commentId));
+      } catch (e) {
+          console.error("Rejection failed", e);
+      }
+  };
+
   // Determine skeleton vs real content
   const isInitialLoad = loading && comments.length === 0;
 
@@ -119,8 +173,49 @@ export const CommentList: React.FC<CommentListProps> = ({ postId }) => {
                    {vibe}
                 </div>
             ) : null}
+            
+            {comments.length > 3 && (
+                <Button 
+                   variant="outline" 
+                   size="sm" 
+                   onClick={handleSummarizeThread} 
+                   disabled={isSummarizing}
+                   className="rounded-full flex items-center gap-2"
+                >
+                    {isSummarizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    Summarize Thread
+                </Button>
+            )}
         </div>
       </div>
+
+      {threadSummary && (
+          <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl text-sm leading-relaxed mb-6">
+              <div className="flex items-center gap-2 font-bold mb-2 text-primary">
+                  <Sparkles className="w-4 h-4" /> AI Summary
+              </div>
+              {threadSummary}
+          </div>
+      )}
+
+      {suggestedReplies.length > 0 && (
+          <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl mb-6">
+              <div className="flex items-center gap-2 font-bold mb-3 text-primary">
+                  <Sparkles className="w-4 h-4" /> Suggested AI Replies for You
+              </div>
+              <div className="flex flex-col gap-3">
+                  {suggestedReplies.map((reply) => (
+                      <div key={reply._id} className="bg-background border rounded-lg p-3">
+                          <p className="text-sm text-foreground mb-3">{reply.content}</p>
+                          <div className="flex gap-2">
+                              <Button size="sm" onClick={() => handleApproveSuggestion(reply._id)}>Approve & Post</Button>
+                              <Button size="sm" variant="ghost" onClick={() => handleRejectSuggestion(reply._id)}>Reject</Button>
+                          </div>
+                      </div>
+                  ))}
+              </div>
+          </div>
+      )}
 
       {user ? (
         <div className="mb-6">

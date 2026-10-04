@@ -41,7 +41,11 @@ export interface IUser {
     },
     lastLogin?: Date,
     createdAt?: Date,
-    updatedAt?: Date
+    updatedAt?: Date,
+    aiPrefs: {
+        commentReplies: "off" | "on_mention" | "faq_draft",
+        suggestReplies: boolean
+    }
 }
 
 
@@ -76,4 +80,4 @@ export interface EmailOptions {
     html?: string;
 }
 
-export type UserSettingsUpdate = Partial<IUser["privacy"]> & Partial<IUser["settings"]> & Partial<IUser["notificationPreferences"]>;
+export type UserSettingsUpdate = Partial<IUser["privacy"]> & Partial<IUser["settings"]> & Partial<IUser["notificationPreferences"]> & Partial<IUser["aiPrefs"]>;

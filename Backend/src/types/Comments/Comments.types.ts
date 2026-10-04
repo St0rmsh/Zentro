@@ -8,6 +8,12 @@ export interface IComment {
     parentComment?:Types.ObjectId,
     createdAt?: Date,
     updatedAt?: Date,
+    isAI?: boolean,
+    aiMeta?: {
+        model?: string,
+        groundedOnPostVersion?: Date,
+        status?: "published" | "pending_approval" | "rejected"
+    }
 }
 
 export interface ICreateCommentBody{

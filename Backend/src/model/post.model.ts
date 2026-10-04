@@ -70,6 +70,9 @@ const postSchema = new mongoose.Schema<IPost>(
             ],
             default: "General",
         },
+        embedding: {
+            type: [Number]
+        }
     },
     { timestamps: true }
 );
