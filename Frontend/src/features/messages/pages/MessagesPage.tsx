@@ -9,16 +9,22 @@ import {
 } from "react";
 import {
   ArrowLeft,
+  Bot,
   Check,
   CheckCheck,
+  ChevronDown,
+  Copy,
   Image as ImageIcon,
   MessageCircle,
   MoreVertical,
   Paperclip,
+  Reply,
   Search,
   Send,
   Smile,
+  Sparkles,
   SquarePen,
+  Trash2,
   UserRound,
   X,
 } from "lucide-react";
@@ -32,6 +38,12 @@ import {
   ConversationSummary,
   UserSearchResult,
 } from "../services/message.service";
+
+/* -------------------------------------------------------------------------- */
+/* Constants                                                                   */
+/* -------------------------------------------------------------------------- */
+
+const ZENTRO_AI_USERNAME = "zentro-ai";
 
 /* -------------------------------------------------------------------------- */
 /* Helpers                                                                    */
@@ -170,6 +182,11 @@ function isNearBottom(element: HTMLElement, threshold = 120) {
   );
 }
 
+function isZentroAI(conversation: ConversationSummary | UserSearchResult | null): boolean {
+  if (!conversation) return false;
+  return ("username" in conversation && conversation.username === ZENTRO_AI_USERNAME);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Avatar                                                                     */
 /* -------------------------------------------------------------------------- */
@@ -179,11 +196,13 @@ function Avatar({
   name,
   size = "md",
   online = false,
+  isAI = false,
 }: {
   src?: string;
   name?: string;
   size?: "sm" | "md" | "lg";
   online?: boolean;
+  isAI?: boolean;
 }) {
   const sizeClass = {
     sm: "h-9 w-9 text-xs",
@@ -193,7 +212,13 @@ function Avatar({
 
   return (
     <div className="relative shrink-0">
-      {src ? (
+      {isAI ? (
+        <div
+          className={`${sizeClass} flex items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 ring-2 ring-background shadow-lg shadow-violet-500/20`}
+        >
+          <Sparkles className="h-[45%] w-[45%] text-white" />
+        </div>
+      ) : src ? (
         <img
           src={src}
           alt={name || "User"}
@@ -207,11 +232,20 @@ function Avatar({
         </div>
       )}
 
-      {online && (
+      {online && !isAI && (
         <span
           className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background bg-emerald-500"
           aria-label="Online"
         />
+      )}
+
+      {isAI && (
+        <span
+          className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-violet-500"
+          aria-label="AI"
+        >
+          <Bot className="h-2.5 w-2.5 text-white" />
+        </span>
       )}
     </div>
   );
@@ -259,9 +293,16 @@ function ConversationList({
     });
   }, [conversations, search]);
 
+  // Separate AI conversations from regular ones, pin AI at top
+  const sortedConversations = useMemo(() => {
+    const ai = filteredConversations.filter(c => c.username === ZENTRO_AI_USERNAME);
+    const rest = filteredConversations.filter(c => c.username !== ZENTRO_AI_USERNAME);
+    return [...ai, ...rest];
+  }, [filteredConversations]);
+
   if (loading && conversations.length === 0) {
     return (
-      <div className="flex-1 space-y-2 overflow-y-auto px-3 py-3">
+      <div className="flex-1 space-y-1 overflow-y-auto px-3 py-3">
         {[1, 2, 3, 4, 5].map((item) => (
           <div
             key={item}
@@ -270,8 +311,8 @@ function ConversationList({
             <div className="h-11 w-11 shrink-0 animate-pulse rounded-full bg-muted" />
 
             <div className="min-w-0 flex-1 space-y-2">
-              <div className="h-3 w-28 animate-pulse rounded bg-muted" />
-              <div className="h-2.5 w-40 animate-pulse rounded bg-muted" />
+              <div className="h-3.5 w-28 animate-pulse rounded-md bg-muted" />
+              <div className="h-2.5 w-40 animate-pulse rounded-md bg-muted" />
             </div>
           </div>
         ))}
@@ -282,23 +323,23 @@ function ConversationList({
   if (conversations.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-          <MessageCircle className="h-6 w-6 text-primary" />
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 shadow-sm">
+          <MessageCircle className="h-7 w-7 text-primary" />
         </div>
 
-        <h3 className="text-sm font-semibold">
+        <h3 className="text-sm font-bold">
           No conversations yet
         </h3>
 
-        <p className="mt-1 max-w-[240px] text-xs leading-5 text-muted-foreground">
+        <p className="mt-1.5 max-w-[240px] text-xs leading-5 text-muted-foreground">
           Start a conversation with someone using the new
-          message button.
+          message button above.
         </p>
       </div>
     );
   }
 
-  if (filteredConversations.length === 0) {
+  if (sortedConversations.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
         <Search className="mb-3 h-6 w-6 text-muted-foreground" />
@@ -315,12 +356,13 @@ function ConversationList({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-2 py-2">
-      {filteredConversations.map((conversation) => {
+    <div className="flex-1 overflow-y-auto px-2 py-1.5">
+      {sortedConversations.map((conversation) => {
         const isActive =
           activeId === conversation.partnerId;
 
         const unread = conversation.unreadCount > 0;
+        const isAI = conversation.username === ZENTRO_AI_USERNAME;
 
         return (
           <button
@@ -329,9 +371,11 @@ function ConversationList({
             onClick={() =>
               onSelect(conversation.partnerId)
             }
-            className={`group mb-0.5 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors ${
+            className={`group mb-0.5 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all duration-200 ${
               isActive
-                ? "bg-primary/10"
+                ? isAI
+                  ? "bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 ring-1 ring-violet-500/20"
+                  : "bg-primary/10 ring-1 ring-primary/10"
                 : "hover:bg-muted/70"
             }`}
           >
@@ -339,19 +383,29 @@ function ConversationList({
               src={conversation.avatar}
               name={conversation.fullname}
               size="md"
+              isAI={isAI}
             />
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
-                <span
-                  className={`truncate text-sm ${
-                    unread
-                      ? "font-bold text-foreground"
-                      : "font-medium text-foreground"
-                  }`}
-                >
-                  {conversation.fullname}
-                </span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span
+                    className={`truncate text-sm ${
+                      unread
+                        ? "font-bold text-foreground"
+                        : "font-medium text-foreground"
+                    }`}
+                  >
+                    {conversation.fullname}
+                  </span>
+
+                  {isAI && (
+                    <span className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-violet-500">
+                      <Bot className="h-2.5 w-2.5" />
+                      AI
+                    </span>
+                  )}
+                </div>
 
                 <span
                   className={`shrink-0 text-[10px] ${
@@ -378,7 +432,7 @@ function ConversationList({
                 </span>
 
                 {unread && (
-                  <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">
+                  <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground shadow-sm shadow-primary/30">
                     {conversation.unreadCount > 99
                       ? "99+"
                       : conversation.unreadCount}
@@ -461,7 +515,7 @@ function NewMessagePicker({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="rounded-xl p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           aria-label="Close new message"
         >
           <X className="h-5 w-5" />
@@ -519,13 +573,13 @@ function NewMessagePicker({
                 key={item}
                 className="flex items-center gap-3 rounded-xl p-3"
               >
-                <div className="h-11 w-11 animate-pulse rounded-full bg-muted" />
+              <div className="h-11 w-11 animate-pulse rounded-full bg-muted" />
 
-                <div className="min-w-0 flex-1 space-y-2">
-                  <div className="h-3 w-32 animate-pulse rounded bg-muted" />
-                  <div className="h-2.5 w-20 animate-pulse rounded bg-muted" />
-                </div>
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="h-3 w-32 animate-pulse rounded bg-muted" />
+                <div className="h-2.5 w-20 animate-pulse rounded bg-muted" />
               </div>
+            </div>
             ))}
           </div>
         )}
@@ -574,12 +628,22 @@ function NewMessagePicker({
                 src={user.avatar}
                 name={user.fullname}
                 size="md"
+                isAI={user.username === ZENTRO_AI_USERNAME}
               />
 
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-foreground">
-                  {user.fullname}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    {user.fullname}
+                  </p>
+
+                  {user.username === ZENTRO_AI_USERNAME && (
+                    <span className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-violet-500">
+                      <Bot className="h-2.5 w-2.5" />
+                      AI
+                    </span>
+                  )}
+                </div>
 
                 <p className="truncate text-xs text-muted-foreground">
                   @{user.username}
@@ -607,45 +671,102 @@ function MessageBubble({
   isMine,
   showDate,
   grouped,
+  isAIChat,
+  replyTo,
+  onReply,
+  onCopy,
 }: {
   message: Message;
   isMine: boolean;
   showDate: boolean;
   grouped: boolean;
+  isAIChat?: boolean;
+  replyTo?: Message;
+  onReply: (message: Message) => void;
+  onCopy: (text: string) => void;
 }) {
+  const [showActions, setShowActions] = useState(false);
+  const isAIMessage = !isMine && isAIChat;
+
   return (
     <>
       {showDate && (
         <div className="my-6 flex items-center justify-center">
-          <span className="rounded-full border border-border bg-background px-3 py-1 text-[10px] font-medium text-muted-foreground">
+          <div className="h-px flex-1 bg-border/50" />
+          <span className="mx-4 rounded-full border border-border bg-card px-3 py-1 text-[10px] font-medium text-muted-foreground shadow-sm">
             {formatConversationDate(message.createdAt)}
           </span>
+          <div className="h-px flex-1 bg-border/50" />
         </div>
       )}
 
       <div
-        className={`group flex ${
+        className={`group/msg relative flex ${
           isMine ? "justify-end" : "justify-start"
-        } ${grouped ? "mt-0.5" : "mt-2"}`}
+        } ${grouped ? "mt-0.5" : "mt-3"}`}
+        onMouseEnter={() => setShowActions(true)}
+        onMouseLeave={() => setShowActions(false)}
       >
+        {/* Quick actions (visible on hover) */}
+        {showActions && (
+          <div className={`absolute top-0 z-10 flex items-center gap-0.5 ${
+            isMine ? "right-full mr-1" : "left-full ml-1"
+          }`}>
+            <button
+              type="button"
+              onClick={() => onReply(message)}
+              className="rounded-lg p-1.5 text-muted-foreground transition-all hover:bg-muted hover:text-foreground hover:scale-110"
+              title="Reply"
+            >
+              <Reply className="h-3.5 w-3.5" />
+            </button>
+            {message.content && (
+              <button
+                type="button"
+                onClick={() => onCopy(message.content)}
+                className="rounded-lg p-1.5 text-muted-foreground transition-all hover:bg-muted hover:text-foreground hover:scale-110"
+                title="Copy"
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        )}
+
         <div
-          className={`flex max-w-[88%] flex-col sm:max-w-[70%] ${
+          className={`flex max-w-[85%] flex-col sm:max-w-[70%] ${
             isMine ? "items-end" : "items-start"
           }`}
         >
+          {/* Reply preview */}
+          {replyTo && (
+            <div className={`mb-1 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] ${
+              isMine ? "bg-primary/5 text-primary/70" : "bg-muted text-muted-foreground"
+            }`}>
+              <Reply className="h-3 w-3 shrink-0" />
+              <span className="truncate max-w-[200px]">{replyTo.content}</span>
+            </div>
+          )}
+
           <div
-            className={`relative overflow-hidden px-4 py-2.5 text-sm shadow-sm ${
+            className={`relative overflow-hidden px-4 py-2.5 text-sm leading-relaxed transition-shadow ${
               isMine
-                ? `bg-primary text-primary-foreground ${
+                ? `bg-primary text-primary-foreground shadow-sm shadow-primary/20 ${
                     grouped
-                      ? "rounded-2xl rounded-br-md"
-                      : "rounded-2xl rounded-br-md"
+                      ? "rounded-2xl rounded-br-lg"
+                      : "rounded-2xl rounded-br-lg"
                   }`
-                : `border border-border bg-card text-foreground ${
-                    grouped
-                      ? "rounded-2xl rounded-bl-md"
-                      : "rounded-2xl rounded-bl-md"
-                  }`
+                : isAIMessage
+                  ? `border border-violet-500/20 bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5 text-foreground shadow-sm ${
+                      grouped
+                        ? "rounded-2xl rounded-bl-lg"
+                        : "rounded-2xl rounded-bl-lg"
+                    }`
+                  : `border border-border bg-card text-foreground shadow-sm ${
+                      grouped
+                        ? "rounded-2xl rounded-bl-lg"
+                        : "rounded-2xl rounded-bl-lg"
+                    }`
             }`}
           >
             {message.mediaUrl && (
@@ -659,42 +780,49 @@ function MessageBubble({
                     src={message.mediaUrl}
                     alt="Message attachment"
                     loading="lazy"
-                    className="max-h-80 max-w-full object-cover"
+                    className="max-h-80 max-w-full rounded-lg object-cover"
                   />
                 ) : (
                   <video
                     src={message.mediaUrl}
                     controls
                     preload="metadata"
-                    className="max-h-80 max-w-full"
+                    className="max-h-80 max-w-full rounded-lg"
                   />
                 )}
               </div>
             )}
 
             {message.content && (
-              <p className="whitespace-pre-wrap break-words leading-5">
+              <p className="whitespace-pre-wrap break-words leading-[1.6]">
                 {message.content}
               </p>
             )}
           </div>
 
           <div
-            className={`mt-1 flex items-center gap-1 px-1 text-[10px] text-muted-foreground ${
+            className={`mt-1 flex items-center gap-1.5 px-1 text-[10px] text-muted-foreground ${
               isMine ? "flex-row-reverse" : ""
             }`}
           >
             <span>{formatMessageTime(message.createdAt)}</span>
 
+            {isAIMessage && (
+              <span className="flex items-center gap-0.5 text-violet-500">
+                <Sparkles className="h-2.5 w-2.5" />
+                AI
+              </span>
+            )}
+
             {isMine &&
               (message.readAt ? (
                 <CheckCheck
-                  className="h-3 w-3 text-primary"
+                  className="h-3.5 w-3.5 text-primary"
                   aria-label="Read"
                 />
               ) : (
                 <Check
-                  className="h-3 w-3"
+                  className="h-3.5 w-3.5"
                   aria-label="Sent"
                 />
               ))}
@@ -702,6 +830,47 @@ function MessageBubble({
         </div>
       </div>
     </>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Typing Indicator                                                           */
+/* -------------------------------------------------------------------------- */
+
+function TypingIndicator({ name, isAI }: { name: string; isAI: boolean }) {
+  return (
+    <div className="flex items-end gap-2 pt-2">
+      <div className={`rounded-2xl rounded-bl-lg px-4 py-3 ${
+        isAI 
+          ? "border border-violet-500/20 bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5" 
+          : "border border-border bg-card"
+      }`}>
+        <div className="flex items-center gap-1.5">
+          {isAI && <Sparkles className="h-3 w-3 text-violet-500 animate-pulse" />}
+          <div
+            className="flex items-center gap-1"
+            aria-label={`${name} is typing`}
+          >
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60" />
+            <span
+              className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60"
+              style={{
+                animationDelay: "150ms",
+              }}
+            />
+            <span
+              className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60"
+              style={{
+                animationDelay: "300ms",
+              }}
+            />
+          </div>
+        </div>
+      </div>
+      <span className="mb-1 text-[10px] text-muted-foreground">
+        {isAI ? "Zentro AI is thinking…" : `${name} is typing…`}
+      </span>
+    </div>
   );
 }
 
@@ -752,19 +921,24 @@ export function MessagesPage() {
   const [showScrollButton, setShowScrollButton] =
     useState(false);
 
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
   const messagesContainerRef =
     useRef<HTMLDivElement>(null);
 
   const messagesEndRef =
     useRef<HTMLDivElement>(null);
 
-  const inputRef =
-    useRef<HTMLInputElement>(null);
+  const textareaRef =
+    useRef<HTMLTextAreaElement>(null);
 
   const typingTimeoutRef =
     useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const shouldScrollRef = useRef(true);
+
+  const isActiveAI = isZentroAI(activePartner);
 
   /* ---------------------------------------------------------------------- */
   /* Inbox                                                                   */
@@ -819,6 +993,7 @@ export function MessagesPage() {
       setTyping(false);
       setConversationError("");
       setContent("");
+      setReplyingTo(null);
       return;
     }
 
@@ -828,6 +1003,7 @@ export function MessagesPage() {
     setConversationError("");
     setTyping(false);
     setContent("");
+    setReplyingTo(null);
     shouldScrollRef.current = true;
 
     messageService
@@ -978,6 +1154,17 @@ export function MessagesPage() {
   }, [messages, typing]);
 
   /* ---------------------------------------------------------------------- */
+  /* Auto-resize textarea                                                    */
+  /* ---------------------------------------------------------------------- */
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
+  }, [content]);
+
+  /* ---------------------------------------------------------------------- */
   /* Scroll detection                                                        */
   /* ---------------------------------------------------------------------- */
 
@@ -1015,9 +1202,10 @@ export function MessagesPage() {
     setSearchParams({ recipient: userId });
     setShowPicker(false);
     setConversationSearch("");
+    setReplyingTo(null);
 
     window.setTimeout(() => {
-      inputRef.current?.focus();
+      textareaRef.current?.focus();
     }, 150);
   };
 
@@ -1030,9 +1218,10 @@ export function MessagesPage() {
     setMessages([]);
     setConversationError("");
     setContent("");
+    setReplyingTo(null);
 
     window.setTimeout(() => {
-      inputRef.current?.focus();
+      textareaRef.current?.focus();
     }, 150);
   };
 
@@ -1055,6 +1244,7 @@ export function MessagesPage() {
     setContent("");
     setTyping(false);
     setSendError("");
+    setReplyingTo(null);
   };
 
   /* ---------------------------------------------------------------------- */
@@ -1107,6 +1297,25 @@ export function MessagesPage() {
   };
 
   /* ---------------------------------------------------------------------- */
+  /* Actions                                                                 */
+  /* ---------------------------------------------------------------------- */
+
+  const handleReply = (message: Message) => {
+    setReplyingTo(message);
+    textareaRef.current?.focus();
+  };
+
+  const handleCopy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(text);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      // Clipboard API not available
+    }
+  };
+
+  /* ---------------------------------------------------------------------- */
   /* Send                                                                    */
   /* ---------------------------------------------------------------------- */
 
@@ -1145,6 +1354,7 @@ export function MessagesPage() {
       });
 
       setContent("");
+      setReplyingTo(null);
       shouldScrollRef.current = true;
 
       void loadInbox();
@@ -1156,20 +1366,20 @@ export function MessagesPage() {
       setSending(false);
 
       window.setTimeout(() => {
-        inputRef.current?.focus();
+        textareaRef.current?.focus();
       }, 0);
     }
   };
 
   const handleInputKeyDown = (
-    event: KeyboardEvent<HTMLInputElement>
+    event: KeyboardEvent<HTMLTextAreaElement>
   ) => {
     if (event.key !== "Enter") {
       return;
     }
 
     if (event.shiftKey) {
-      return;
+      return; // Allow newline
     }
 
     event.preventDefault();
@@ -1213,7 +1423,7 @@ export function MessagesPage() {
         <div className="border-b border-border px-4 pb-3 pt-4">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 shadow-sm">
                 <MessageCircle className="h-5 w-5 text-primary" />
               </div>
 
@@ -1223,7 +1433,7 @@ export function MessagesPage() {
                 </h1>
 
                 <p className="text-[11px] text-muted-foreground">
-                  Your conversations
+                  {conversations.length} conversation{conversations.length !== 1 ? "s" : ""}
                 </p>
               </div>
             </div>
@@ -1233,7 +1443,7 @@ export function MessagesPage() {
               onClick={() =>
                 setShowPicker(true)
               }
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-md hover:shadow-primary/30 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
               aria-label="New message"
             >
               <SquarePen className="h-4 w-4" />
@@ -1301,7 +1511,7 @@ export function MessagesPage() {
       >
         {!recipientId ? (
           <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-            <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-3xl border border-border bg-card">
+            <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-3xl border border-border bg-gradient-to-br from-card to-muted shadow-sm">
               <MessageCircle className="h-9 w-9 text-primary" />
             </div>
 
@@ -1311,7 +1521,7 @@ export function MessagesPage() {
 
             <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
               Select a conversation from the sidebar
-              or start a new conversation.
+              or start a new one.
             </p>
 
             <button
@@ -1319,7 +1529,7 @@ export function MessagesPage() {
               onClick={() =>
                 setShowPicker(true)
               }
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-md active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             >
               <SquarePen className="h-4 w-4" />
               New message
@@ -1331,7 +1541,11 @@ export function MessagesPage() {
             {/* Header                                                         */}
             {/* ------------------------------------------------------------ */}
 
-            <header className="flex min-h-[68px] items-center gap-3 border-b border-border bg-card px-3 py-3 sm:px-5">
+            <header className={`flex min-h-[68px] items-center gap-3 border-b px-3 py-3 sm:px-5 ${
+              isActiveAI 
+                ? "border-violet-500/10 bg-gradient-to-r from-violet-500/5 to-fuchsia-500/5" 
+                : "border-border bg-card"
+            }`}>
               <button
                 type="button"
                 onClick={closeConversation}
@@ -1345,18 +1559,32 @@ export function MessagesPage() {
                 src={partnerAvatar}
                 name={partnerName}
                 size="md"
-                online
+                online={!isActiveAI}
+                isAI={isActiveAI}
               />
 
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-foreground">
-                  {partnerName ||
-                    "Conversation"}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="truncate text-sm font-bold text-foreground">
+                    {partnerName ||
+                      "Conversation"}
+                  </p>
+
+                  {isActiveAI && (
+                    <span className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-violet-500">
+                      <Bot className="h-2.5 w-2.5" />
+                      AI
+                    </span>
+                  )}
+                </div>
 
                 {typing ? (
-                  <p className="text-xs font-medium text-primary">
-                    Typing...
+                  <p className={`text-xs font-medium ${isActiveAI ? "text-violet-500" : "text-primary"}`}>
+                    {isActiveAI ? "Thinking…" : "Typing…"}
+                  </p>
+                ) : isActiveAI ? (
+                  <p className="text-xs text-violet-500/70">
+                    Ask me anything · Powered by AI
                   </p>
                 ) : partnerUsername ? (
                   <p className="truncate text-xs text-muted-foreground">
@@ -1385,7 +1613,9 @@ export function MessagesPage() {
             <div
               ref={messagesContainerRef}
               onScroll={handleMessagesScroll}
-              className="relative flex-1 overflow-y-auto"
+              className={`relative flex-1 overflow-y-auto ${
+                isActiveAI ? "bg-gradient-to-b from-violet-500/[0.02] to-transparent" : ""
+              }`}
             >
               <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-4 py-5 sm:px-6">
                 {loadingConversation ? (
@@ -1426,21 +1656,41 @@ export function MessagesPage() {
                       src={partnerAvatar}
                       name={partnerName}
                       size="lg"
-                      online
+                      online={!isActiveAI}
+                      isAI={isActiveAI}
                     />
 
-                    <h3 className="mt-4 text-sm font-semibold text-foreground">
-                      Start a conversation
+                    <h3 className="mt-4 text-sm font-bold text-foreground">
+                      {isActiveAI ? "Chat with Zentro AI" : "Start a conversation"}
                     </h3>
 
-                    <p className="mt-1 max-w-xs text-xs leading-5 text-muted-foreground">
-                      Send a message to{" "}
-                      {partnerName ||
-                        "this person"}.
+                    <p className="mt-1.5 max-w-xs text-xs leading-5 text-muted-foreground">
+                      {isActiveAI 
+                        ? "Ask questions, get recommendations, or just chat. I'm here to help!"
+                        : `Send a message to ${partnerName || "this person"}.`
+                      }
                     </p>
+
+                    {isActiveAI && (
+                      <div className="mt-4 flex flex-wrap justify-center gap-2">
+                        {["What's trending?", "Recommend a post", "Help me write"].map(suggestion => (
+                          <button
+                            key={suggestion}
+                            type="button"
+                            onClick={() => {
+                              setContent(suggestion);
+                              textareaRef.current?.focus();
+                            }}
+                            className="rounded-full border border-violet-500/20 bg-violet-500/5 px-3 py-1.5 text-xs font-medium text-violet-600 transition-all hover:bg-violet-500/10 hover:border-violet-500/30 active:scale-95 dark:text-violet-400"
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <div className="mt-auto space-y-1">
+                  <div className="mt-auto space-y-0.5">
                     {messages.map(
                       (message, index) => {
                         const senderId =
@@ -1478,38 +1728,16 @@ export function MessagesPage() {
                             isMine={isMine}
                             showDate={showDate}
                             grouped={grouped}
+                            isAIChat={isActiveAI}
+                            onReply={handleReply}
+                            onCopy={handleCopy}
                           />
                         );
                       }
                     )}
 
                     {typing && (
-                      <div className="flex justify-start pt-2">
-                        <div className="rounded-2xl rounded-bl-md border border-border bg-card px-4 py-3">
-                          <div
-                            className="flex items-center gap-1"
-                            aria-label="User is typing"
-                          >
-                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" />
-
-                            <span
-                              className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground"
-                              style={{
-                                animationDelay:
-                                  "100ms",
-                              }}
-                            />
-
-                            <span
-                              className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground"
-                              style={{
-                                animationDelay:
-                                  "200ms",
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </div>
+                      <TypingIndicator name={partnerName} isAI={isActiveAI} />
                     )}
 
                     <div
@@ -1524,9 +1752,10 @@ export function MessagesPage() {
                 <button
                   type="button"
                   onClick={scrollToBottom}
-                  className="absolute bottom-4 right-4 rounded-full border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-md transition-colors hover:bg-muted"
+                  className="absolute bottom-4 right-4 flex items-center gap-1.5 rounded-full border border-border bg-card/95 px-3 py-2 text-xs font-medium text-foreground shadow-lg backdrop-blur-sm transition-all hover:bg-muted active:scale-95"
                 >
-                  ↓ New messages
+                  <ChevronDown className="h-3.5 w-3.5" />
+                  New messages
                 </button>
               )}
             </div>
@@ -1535,10 +1764,29 @@ export function MessagesPage() {
             {/* Composer                                                       */}
             {/* ------------------------------------------------------------ */}
 
-            <div className="border-t border-border bg-card px-3 py-3 sm:px-5">
+            <div className={`border-t px-3 py-3 sm:px-5 ${
+              isActiveAI ? "border-violet-500/10 bg-gradient-to-r from-violet-500/[0.02] to-fuchsia-500/[0.02]" : "border-border bg-card"
+            }`}>
               {sendError && (
                 <div className="mx-auto mb-2 max-w-4xl rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
                   {sendError}
+                </div>
+              )}
+
+              {/* Reply preview */}
+              {replyingTo && (
+                <div className="mx-auto mb-2 flex max-w-4xl items-center gap-2 rounded-xl border border-primary/10 bg-primary/5 px-3 py-2">
+                  <Reply className="h-4 w-4 shrink-0 text-primary" />
+                  <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                    Replying to: {replyingTo.content}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setReplyingTo(null)}
+                    className="shrink-0 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 </div>
               )}
 
@@ -1548,7 +1796,11 @@ export function MessagesPage() {
                 }
                 className="mx-auto flex max-w-4xl items-end gap-2"
               >
-                <div className="flex min-w-0 flex-1 items-end rounded-2xl border border-input bg-muted/30 px-2 py-1.5 transition-colors focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10">
+                <div className={`flex min-w-0 flex-1 items-end rounded-2xl border px-2 py-1.5 transition-all focus-within:ring-2 ${
+                  isActiveAI 
+                    ? "border-violet-500/20 bg-violet-500/[0.03] focus-within:border-violet-500/40 focus-within:ring-violet-500/10" 
+                    : "border-input bg-muted/30 focus-within:border-primary/40 focus-within:ring-primary/10"
+                }`}>
                   <button
                     type="button"
                     disabled
@@ -1569,8 +1821,8 @@ export function MessagesPage() {
                     <ImageIcon className="h-4 w-4" />
                   </button>
 
-                  <input
-                    ref={inputRef}
+                  <textarea
+                    ref={textareaRef}
                     value={content}
                     onChange={(event) =>
                       handleContentChange(
@@ -1592,13 +1844,16 @@ export function MessagesPage() {
                       }
                     }}
                     onBlur={stopTyping}
-                    placeholder={`Message ${
-                      partnerName ||
-                      "someone"
-                    }...`}
+                    placeholder={
+                      isActiveAI
+                        ? "Ask Zentro AI anything…"
+                        : `Message ${partnerName || "someone"}…`
+                    }
                     disabled={sending}
                     autoComplete="off"
-                    className="min-w-0 flex-1 bg-transparent px-2 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                    rows={1}
+                    className="min-w-0 flex-1 resize-none bg-transparent px-2 py-2.5 text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{ maxHeight: "160px" }}
                     aria-label={`Message ${
                       partnerName ||
                       "someone"
@@ -1627,10 +1882,14 @@ export function MessagesPage() {
                       ? "Sending message"
                       : "Send message"
                   }
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-40"
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none ${
+                    isActiveAI
+                      ? "bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-violet-500/20 hover:shadow-md hover:shadow-violet-500/30"
+                      : "bg-primary shadow-primary/20 hover:bg-primary/90 hover:shadow-md hover:shadow-primary/30"
+                  }`}
                 >
                   {sending ? (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                   ) : (
                     <Send className="h-4 w-4" />
                   )}
@@ -1638,8 +1897,7 @@ export function MessagesPage() {
               </form>
 
               <p className="mx-auto mt-2 hidden max-w-4xl text-[10px] text-muted-foreground sm:block">
-                Press Enter to send · Shift + Enter
-                is unavailable in single-line mode
+                Press Enter to send · Shift + Enter for new line
               </p>
             </div>
           </>
